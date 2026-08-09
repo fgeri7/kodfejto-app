@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kódfejtő – digitális lap</title>
+<style>
+  :root{
+    --tab-bg:#2b2b2b;
+    --tab-fg:#f2f2f0;
+    --card-bg:#eeeeec;
+    --card-bg-alt:#e4e4e1;
+    --card-border:#c9c9c5;
+    --text:#222;
+    --accent-intercept:#c9a227;
+    --accent-miscom:#b0453d;
+    --page-bg:#dcdcd8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:var(--page-bg);
+    color:var(--text);
+    transition:background .35s ease;
+    padding-bottom:90px;
+  }
+  body.theme-black{ --page-bg:#0c0c0c; }
+  .app{ max-width:760px; margin:0 auto; padding:14px; }
+
+  /* top global controls */
+  .global-bar{
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+    border-radius:8px;
+    padding:10px 14px;
+    margin-bottom:10px;
+    font-size:0.85rem;
+  }
+  .team-select{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .team-select button{
+    flex:1;
+    padding:8px;
+    border:none;
+    border-radius:6px;
+    background:#4a4a4a;
+    color:#ddd;
+    font-weight:700;
+    cursor:pointer;
+    font-size:0.8rem;
+  }
+  .team-select button.active-white{background:#f2f2f0;color:#222;}
+  .team-select button.active-black{background:#111;color:#fff;box-shadow:inset 0 0 0 1px #555;}
+
+  .scoreboard-teams{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .scoreboard-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .scoreboard-label{
+    flex:0 0 62px;
+    font-size:0.78rem;
+    font-weight:700;
+  }
+  .score-pill{
+    flex:1;
+    text-align:center;
+    padding:5px 8px;
+    border-radius:20px;
+    background:#4a4a4a;
+    font-weight:700;
+    font-size:0.78rem;
+  }
+  .score-pill.win{background:var(--accent-intercept);color:#3a2c00;}
+  .score-pill.lose{background:var(--accent-miscom);color:#fff;}
+  .banner{
+    text-align:center;
+    font-weight:800;
+    margin-top:6px;
+    font-size:0.95rem;
+  }
+
+  .sheet{display:none;}
+  .sheet.active{display:block;}
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+    padding:10px 16px;
+    border-radius:8px;
+    margin-bottom:8px;
+  }
+  .logo{ font-weight:800; font-size:1.3rem; letter-spacing:3px; }
+  .side-status{
+    font-size:0.78rem;
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:14px;
+    background:#4a4a4a;
+  }
+  .side-status.own{background:var(--accent-miscom);}
+  .side-status.opp{background:var(--accent-intercept);color:#3a2c00;}
+
+  .round-nav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .round-nav button.arrow{
+    flex:0 0 auto;
+    width:42px;
+    height:42px;
+    border:none;
+    border-radius:8px;
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+    font-size:1.1rem;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .round-pips{
+    flex:1;
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    justify-content:center;
+  }
+  .round-pip{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    border:1px solid var(--card-border);
+    background:var(--card-bg);
+    color:var(--text);
+    font-size:0.78rem;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  .round-pip.current{
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+  }
+  .round-pip.pip-good{box-shadow:inset 0 0 0 2px var(--accent-intercept);}
+  .round-pip.pip-bad{box-shadow:inset 0 0 0 2px var(--accent-miscom);}
+
+  .overview-toggle{
+    display:block;
+    width:100%;
+    margin-bottom:10px;
+    padding:8px;
+    border:none;
+    border-radius:8px;
+    background:var(--card-bg);
+    color:var(--text);
+    font-weight:700;
+    font-size:0.8rem;
+    cursor:pointer;
+  }
+  .rounds-grid.show-all .round-card{
+    display:block !important;
+    margin-bottom:8px;
+  }
+  .round-nav.hidden{ display:none; }
+  .round-card{ display:none; }
+  .round-card.current-round{ display:block; }
+  .round-card{
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .round-card.result-good{box-shadow:inset 0 0 0 2px var(--accent-intercept);}
+  .round-card.result-bad{box-shadow:inset 0 0 0 2px var(--accent-miscom);}
+
+  .round-head{
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:5px 8px;
+    font-size:0.85rem;
+    font-weight:700;
+  }
+  .round-status-badge{
+    font-size:0.68rem;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:10px;
+    background:#555;
+  }
+  .round-status-badge.good{background:var(--accent-intercept);color:#3a2c00;}
+  .round-status-badge.bad{background:var(--accent-miscom);color:#fff;}
+
+  .clue-line-header{
+    display:flex;
+    align-items:center;
+    font-size:0.62rem;
+    font-weight:700;
+    opacity:0.6;
+    padding:3px 8px 0;
+  }
+  .clue-line-header .ch-word{ flex:1; }
+  .clue-line-header .ch-guess{ width:26px; flex:0 0 26px; text-align:center; }
+  .clue-line-header .ch-actual{ width:30px; flex:0 0 30px; text-align:center; }
+
+  .clue-line{
+    border-top:1px solid var(--card-border);
+    display:flex;
+    align-items:stretch;
+  }
+  .clue-line:nth-child(odd){background:var(--card-bg-alt);}
+  .clue-word{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:8px 6px;
+    font-size:0.9rem;
+    color:var(--text);
+    outline:none;
+    min-width:0;
+  }
+  .clue-word:focus{background:rgba(0,0,0,0.05);}
+  .digit-box{
+    width:26px;
+    flex:0 0 26px;
+    border:none;
+    border-left:1px solid var(--card-border);
+    background:transparent;
+    text-align:center;
+    font-size:0.9rem;
+    font-weight:700;
+    color:var(--text);
+    outline:none;
+  }
+  .digit-box.guess-white{ background:rgba(255,255,255,0.5); color:#3a3a3a; }
+  .digit-box.guess-black{ background:rgba(0,0,0,0.55); color:#fff; }
+  .digit-box.actual{ color:var(--accent-miscom); font-weight:800; width:30px; flex:0 0 30px; }
+  .col-hidden{ display:none !important; }
+  .digit-box:focus{background:rgba(0,0,0,0.15);}
+
+  .round-result-row{
+    border-top:1px solid var(--card-border);
+    padding:6px 8px;
+    font-size:0.72rem;
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+  }
+  .round-result-row .result-line{
+    padding:2px 6px;
+    border-radius:4px;
+  }
+  .round-result-row .result-line.good{ background:var(--accent-intercept); color:#3a2c00; font-weight:700; }
+  .round-result-row .result-line.bad{ background:var(--accent-miscom); color:#fff; font-weight:700; }
+  .round-result-row .result-line.neutral{ opacity:0.55; }
+
+  .keywords-title{
+    font-size:0.8rem;
+    font-weight:700;
+    margin:6px 2px;
+    opacity:0.75;
+    color:#333;
+  }
+  body.theme-black .keywords-title{ color:#eee; }
+  .keywords-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-bottom:16px;
+  }
+  @media (max-width:480px){ .keywords-grid{grid-template-columns:repeat(2,1fr);} }
+  .keyword-card{
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .keyword-head{
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+    text-align:center;
+    padding:4px;
+    font-size:0.8rem;
+    font-weight:700;
+  }
+  .keyword-list{
+    min-height:100px;
+    padding:8px;
+    font-size:0.85rem;
+    line-height:1.5;
+    color:var(--text);
+  }
+  .keyword-list .empty{opacity:0.4;font-style:italic;}
+
+  .toolbar{
+    position:fixed;
+    bottom:0;left:0;right:0;
+    background:var(--tab-bg);
+    display:flex;
+    gap:8px;
+    padding:10px 14px;
+    justify-content:center;
+  }
+  .toolbar button{
+    flex:1;
+    max-width:220px;
+    padding:12px 10px;
+    border:none;
+    border-radius:8px;
+    font-size:0.9rem;
+    font-weight:700;
+    cursor:pointer;
+  }
+  #flipBtn{background:#f2f2f0;color:#222;}
+  #resetBtn{background:var(--accent-miscom);color:#fff;}
+
+  .scroll-top-btn{
+    position:fixed;
+    right:14px;
+    bottom:74px;
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    border:none;
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+    font-size:1.1rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+    z-index:60;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+  }
+  .scroll-top-btn.visible{
+    opacity:0.8;
+    pointer-events:auto;
+  }
+  .scroll-top-btn:active{ opacity:1; }
+
+  .sand-timer-btn{
+    position:fixed;
+    left:14px;
+    bottom:74px;
+    width:52px;
+    height:52px;
+    border-radius:50%;
+    border:none;
+    background:var(--tab-bg);
+    color:var(--tab-fg);
+    font-size:1.2rem;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    z-index:60;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+  }
+  .sand-timer-btn.running{ background:var(--accent-intercept); color:#3a2c00; }
+  .sand-timer-btn.time-up{
+    background:var(--accent-miscom);
+    color:#fff;
+    animation: pulseTimer 0.4s ease-in-out 3;
+  }
+  @keyframes pulseTimer{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.18); }
+  }
+
+  /* menu & setup screens */
+  .screen{ max-width:520px; margin:60px auto; padding:24px; text-align:center; }
+  .screen h2{ margin-bottom:6px; }
+  .screen p{ opacity:0.75; font-size:0.9rem; margin-bottom:20px; }
+  .note{ font-size:0.8rem; opacity:0.7; line-height:1.4; }
+  .team-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#f2f2f0; border:1px solid #c9c9c5; border-radius:8px;
+    padding:10px 12px; margin-bottom:8px;
+  }
+  .team-row .team-name{ font-weight:700; }
+  .team-row .team-stats{ font-size:0.78rem; opacity:0.7; }
+  .team-row .team-delete{
+    background:none; border:none; color:#b0453d; font-size:1.1rem;
+    cursor:pointer; width:auto; padding:0 4px; margin:0;
+  }
+  .screen h3{ font-size:0.95rem; margin:0 0 6px; }
+  .player-picker-row{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 0;
+    font-size:0.9rem;
+  }
+  .player-picker-row input{ width:auto; margin:0; }
+  .menu-btn{
+    display:block; width:100%; padding:16px; margin-bottom:12px;
+    border:none; border-radius:10px; font-size:0.95rem; font-weight:800; cursor:pointer;
+  }
+  .menu-btn.primary{ background:#2b2b2b; color:#fff; }
+  .menu-btn.secondary{ background:#eee; color:#222; border:1px solid #ccc; }
+  .setup-field{ text-align:left; margin-bottom:14px; }
+  .room-section{ border-top:1px solid #ccc; margin-top:16px; padding-top:4px; }
+  .room-code-display{
+    text-align:center; font-size:1.6rem; font-weight:800; letter-spacing:5px;
+    background:#2b2b2b; color:#f2f2f0; border-radius:8px; padding:10px; margin-bottom:8px;
+  }
+  .setup-field label{ display:block; font-size:0.8rem; font-weight:700; margin-bottom:4px; opacity:0.75; }
+  .setup-field input{
+    width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; font-size:0.95rem;
+  }
+
+  /* code reveal box inside a round card, full-game mode only */
+  .full-mode-only{ display:none; }
+  body.mode-full .full-mode-only{ display:block; }
+  .code-box{
+    border-top:1px dashed var(--card-border);
+    padding:8px;
+    font-size:0.82rem;
+  }
+  .code-box .code-hidden{ opacity:0.55; margin-bottom:4px; }
+  .code-box .code-revealed{ font-weight:800; font-size:1rem; letter-spacing:1px; margin-bottom:4px; }
+  .code-box button{
+    margin:2px 4px 2px 0; padding:6px 9px; border:none; border-radius:6px;
+    font-size:0.72rem; font-weight:700; cursor:pointer;
+    background:var(--tab-bg); color:var(--tab-fg);
+  }
+  .code-box.finalized{ background:rgba(120,180,120,0.12); }
+
+  /* keyword reveal panel, full-game mode only */
+  .keyword-panel{ margin-bottom:10px; }
+  .keyword-panel button{
+    width:100%; padding:8px; border:none; border-radius:8px;
+    background:var(--card-bg); color:var(--text); font-weight:700; font-size:0.8rem; cursor:pointer;
+  }
+  .keyword-panel .kw-toggle.locked{ opacity:0.5; cursor:not-allowed; }
+  .code-box .code-hidden.locked{ opacity:0.4; }
+  .keyword-panel .kw-reveal{
+    margin-top:6px; padding:8px; background:var(--card-bg); border-radius:8px;
+    font-size:0.9rem; line-height:1.6;
+  }
+
+  .hint{
+    text-align:center;
+    font-size:0.72rem;
+    opacity:0.6;
+    margin:6px 0 4px;
+    color:#333;
+  }
+  body.theme-black .hint{ color:#eee; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<div id="screen-menu" class="screen">
+  <h2>KÓDFEJTŐ</h2>
+  <p>Válaszd ki, hogyan szeretnéd használni</p>
+  <div id="resume-game-section" style="display:none;">
+    <button class="menu-btn primary" id="btn-resume-game" style="background:#c9a227;color:#3a2c00;">▶️ Játék folytatása<br><span id="resume-game-label" style="font-weight:400;font-size:0.75rem;"></span></button>
+    <button class="menu-btn secondary" id="btn-discard-resume" style="font-size:0.75rem;padding:8px;">🗑 Mentett játék törlése</button>
+  </div>
+  <button class="menu-btn primary" id="btn-goto-lap">📋 Csak a kódfejtő lap<br><span style="font-weight:400;font-size:0.75rem;opacity:0.8">saját fizikai kártyákkal, kódokkal játszotok</span></button>
+  <button class="menu-btn secondary" id="btn-goto-setup">🎮 Teljes játék indítása<br><span style="font-weight:400;font-size:0.75rem;opacity:0.6">kellékek nélkül – kulcsszavak és kódok generálva</span></button>
+  <button class="menu-btn secondary" id="btn-goto-teams">👥 Csapatok kezelése<br><span style="font-weight:400;font-size:0.75rem;opacity:0.6">mentett csapatok, győzelmek/vereségek</span></button>
+
+  <div class="room-section">
+    <h3 style="text-align:left;margin:18px 0 6px;">🌐 Másik eszközzel (opcionális)</h3>
+    <div id="room-disconnected">
+      <p class="note" style="text-align:left;">Ha két külön telefonon/eszközön szeretnétek játszani (egy-egy csapat egy eszközön), hozzatok létre egy szobát, vagy csatlakozzatok a másik eszköz kódjával.</p>
+      <button class="menu-btn primary" id="btn-create-room">🎲 Szoba létrehozása</button>
+      <input id="join-room-code" placeholder="Szoba kód (pl. 482913)" maxlength="6" inputmode="numeric" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;text-align:center;letter-spacing:2px;font-weight:700;margin-bottom:8px;">
+      <button class="menu-btn secondary" id="btn-join-room">Csatlakozás kóddal</button>
+      <div id="room-join-status" class="note" style="min-height:18px;font-weight:700;"></div>
+    </div>
+    <div id="room-connected" style="display:none;">
+      <div class="room-code-display" id="room-code-display"></div>
+      <div class="note" id="room-role-note" style="text-align:center;"></div>
+      <div id="room-team-picker">
+        <p class="note" style="text-align:center;font-weight:700;">Melyik csapat vagytok ezen az eszközön? (a választás után már nem lehet váltani)</p>
+        <button class="menu-btn btn-white" id="btn-room-team-white" style="background:#f2f2f0;color:#222;border:2px solid #2b2b2b;">⚪ Fehér csapat vagyunk</button>
+        <button class="menu-btn btn-black" id="btn-room-team-black" style="background:#111;color:#fff;">⚫ Fekete csapat vagyunk</button>
+        <div id="room-team-pick-status" class="note" style="min-height:18px;font-weight:700;text-align:center;"></div>
+      </div>
+      <div id="room-team-locked-badge" class="note" style="display:none;text-align:center;font-weight:700;padding:8px;background:#e4e4e1;border-radius:8px;"></div>
+      <button class="menu-btn secondary" id="btn-leave-room">Szoba elhagyása</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-teams" class="screen" style="display:none;max-width:560px;">
+  <h2>Csapatok és játékosok</h2>
+  <p class="note" style="margin-bottom:14px;">A játékosok, csapatok és statisztikáik ebben a böngészőben mentődnek el, eszközönként külön.</p>
+
+  <h3 style="text-align:left;margin-bottom:6px;">👤 Játékosok</h3>
+  <div class="setup-field">
+    <input id="new-player-name" placeholder="Új játékos neve">
+  </div>
+  <button class="menu-btn primary" id="btn-add-player">➕ Játékos hozzáadása</button>
+  <div id="players-list" style="margin:10px 0 22px;text-align:left;"></div>
+
+  <h3 style="text-align:left;margin-bottom:6px;">👥 Csapatok</h3>
+  <div class="setup-field">
+    <input id="new-team-name" placeholder="Csapat neve (opcionális)">
+  </div>
+  <div class="note" style="text-align:left;margin-bottom:6px;">Válaszd ki a csapat tagjait:</div>
+  <div id="new-team-player-picker" style="text-align:left;margin-bottom:12px;"></div>
+  <button class="menu-btn primary" id="btn-add-team">➕ Csapat létrehozása</button>
+  <div id="teams-list" style="margin:14px 0;text-align:left;"></div>
+
+  <button class="menu-btn secondary" id="btn-teams-back">◀ Vissza</button>
+</div>
+
+<div id="screen-setup" class="screen" style="display:none">
+  <h2>Teljes játék indítása</h2>
+  <p id="setup-host-intro">A program véletlenszerűen sorsol 4-4 kulcsszót és a kódokat mindkét csapatnak.</p>
+  <div id="setup-host-fields">
+    <div class="setup-field">
+      <label>Fehér csapat</label>
+      <select id="setup-select-white" style="width:100%;padding:9px;border-radius:6px;border:1px solid #ccc;margin-bottom:6px;"></select>
+      <input id="setup-name-white" placeholder="Fehér csapat">
+    </div>
+    <div class="setup-field">
+      <label>Fekete csapat</label>
+      <select id="setup-select-black" style="width:100%;padding:9px;border-radius:6px;border:1px solid #ccc;margin-bottom:6px;"></select>
+      <input id="setup-name-black" placeholder="Fekete csapat">
+    </div>
+    <button class="menu-btn primary" id="btn-start-game">🎲 Sorsolás és indítás</button>
+  </div>
+  <div id="setup-guest-waiting" style="display:none;">
+    <p class="note">Csatlakoztatok a szobához. Most a másik eszközön kell megnyomni a "Sorsolás és indítás" gombot — amint megtörténik, ez az oldal automatikusan megnyílik nálatok is.</p>
+    <div class="note" style="text-align:center;font-weight:700;">⏳ Várakozás a másik eszközre...</div>
+  </div>
+  <button class="menu-btn secondary" id="btn-setup-back">◀ Vissza</button>
+</div>
+
+<div id="screen-lap" class="app" style="display:none">
+
+
+  <div class="global-bar">
+    <div class="team-select">
+      <span>Te melyik csapatban vagy? (a titkok elrejtéséhez)</span>
+      <button id="btnTeamWhite" class="active-white">Fehér</button>
+      <button id="btnTeamBlack">Fekete</button>
+    </div>
+    <div class="scoreboard-teams">
+      <div class="scoreboard-row">
+        <span class="scoreboard-label">⚪ Fehér</span>
+        <span class="score-pill" id="pillWhiteIntercept">Elfogás: 0/2</span>
+        <span class="score-pill" id="pillWhiteMiscom">Félreértés: 0/2</span>
+      </div>
+      <div class="scoreboard-row">
+        <span class="scoreboard-label">⚫ Fekete</span>
+        <span class="score-pill" id="pillBlackIntercept">Elfogás: 0/2</span>
+        <span class="score-pill" id="pillBlackMiscom">Félreértés: 0/2</span>
+      </div>
+    </div>
+    <div class="banner" id="banner"></div>
+  </div>
+
+  <!-- FEHÉR OLDAL: rounds where WHITE team's encryptor gives clues -->
+  <div class="sheet active" id="sheet-white" data-color="white">
+    <div class="topbar">
+      <div class="logo">KÓDFEJTŐ</div>
+      <span class="side-status" id="status-white"></span>
+    </div>
+    <div class="keyword-panel full-mode-only" id="kwpanel-white">
+      <button class="kw-toggle">👁 Saját kulcsszavak megtekintése</button>
+      <div class="kw-reveal" style="display:none"></div>
+    </div>
+    <div class="round-nav" id="nav-white">
+      <button class="arrow" id="prev-white">◀</button>
+      <div class="round-pips" id="pips-white"></div>
+      <button class="arrow" id="next-white">▶</button>
+    </div>
+    <button class="overview-toggle" id="overview-white">👁 Összes forduló mutatása</button>
+    <div class="rounds-grid" id="rounds-white"></div>
+    <div class="keywords-title">A fehér csapat kulcsszavaira adott utalások (automatikusan gyűjtve)</div>
+    <div class="keywords-grid" id="keywords-white"></div>
+  </div>
+
+  <!-- FEKETE OLDAL: rounds where BLACK team's encryptor gives clues -->
+  <div class="sheet" id="sheet-black" data-color="black">
+    <div class="topbar">
+      <div class="logo">KÓDFEJTŐ</div>
+      <span class="side-status" id="status-black"></span>
+    </div>
+    <div class="keyword-panel full-mode-only" id="kwpanel-black">
+      <button class="kw-toggle">👁 Saját kulcsszavak megtekintése</button>
+      <div class="kw-reveal" style="display:none"></div>
+    </div>
+    <div class="round-nav" id="nav-black">
+      <button class="arrow" id="prev-black">◀</button>
+      <div class="round-pips" id="pips-black"></div>
+      <button class="arrow" id="next-black">▶</button>
+    </div>
+    <button class="overview-toggle" id="overview-black">👁 Összes forduló mutatása</button>
+    <div class="rounds-grid" id="rounds-black"></div>
+    <div class="keywords-title">A fekete csapat kulcsszavaira adott utalások (automatikusan gyűjtve)</div>
+    <div class="keywords-grid" id="keywords-black"></div>
+  </div>
+
+  <div class="hint">Sárga mező = tipp (1–4) &nbsp;·&nbsp; piros mező = a kör végén kiderült valós szám (1–4)<br>A kör kiértékelése automatikus: eltérés a saját oldaladon = félreértés, egyezés az ellenfél oldalán = elfogás<br>Az adatok csak ebben a munkamenetben maradnak meg</div>
+</div>
+
+<button class="sand-timer-btn" id="sandTimerBtn" aria-label="Homokóra indítása (30 mp)">⏳</button>
+<button class="scroll-top-btn" id="scrollTopBtn" aria-label="Vissza a lap tetejére">↑</button>
+
+<div class="toolbar">
+  <button id="menuBtn" style="background:#555;color:#fff;flex:0 0 60px;">🏠</button>
+  <button id="flipBtn">🔄 Lapozás: Fekete oldalra</button>
+  <button id="resetBtn">Új játék</button>
+</div>
+
+<script>
+let selectedTeam = 'white'; // 'white' or 'black'
+let currentVisible = 'white';
+let currentRound = {white:1, black:1};
+let overviewMode = {white:false, black:false};
+let currentGameTeams = {
+  white: {id:null, name:'Fehér csapat'},
+  black: {id:null, name:'Fekete csapat'}
+};
+let gameConcluded = false;
+let currentKeywords = {white:[], black:[]};
+
+// Firebase / szoba-szinkron állapot - korán deklarálva, hogy semmilyen később lefutó
+// függvény (pl. recomputeAll -> saveLocalGame) ne fusson bele "temporal dead zone" hibába
+const firebaseConfig = {
+  apiKey: "AIzaSyAEhj9rVhGmPAUhWe6GOihhJIm0XC9LMHQ",
+  authDomain: "kodfejto-app.firebaseapp.com",
+  projectId: "kodfejto-app",
+  storageBucket: "kodfejto-app.firebasestorage.app",
+  messagingSenderId: "456016838261",
+  appId: "1:456016838261:web:dfad67e888530020e9c23c"
+};
+
+let db = null;
+let currentRoom = null;
+let isHost = false;
+let applyingRemote = false;
+let roomUnsubscribe = null;
+let lastSeenTimerStart = null;
+let guestHydrated = false;
+let roomTeamLocked = false;
+const syncTimers = {};
+
+try{
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch(e){
+  console.error('Firebase init hiba:', e);
+}
+
+// ---------- játékosok és csapatok kezelése (böngészőben mentve, eszközönként) ----------
+let players = [];
+let teams = [];
+
+function loadPlayers(){
+  try{
+    const raw = localStorage.getItem('kodfejto_players');
+    players = raw ? JSON.parse(raw) : [];
+  } catch(e){
+    players = [];
+  }
+}
+
+function savePlayers(){
+  try{
+    localStorage.setItem('kodfejto_players', JSON.stringify(players));
+  } catch(e){
+    // ha nem elérhető a tárolás, a játékosok csak erre a munkamenetre maradnak meg
+  }
+}
+
+function addPlayer(name){
+  const player = {
+    id: 'player-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+    name: name,
+    gamesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0
+  };
+  players.push(player);
+  savePlayers();
+  return player;
+}
+
+function deletePlayer(id){
+  players = players.filter(p => p.id !== id);
+  savePlayers();
+  // ha egy csapatnak tagja volt, ott is töröljük a hivatkozást
+  teams.forEach(t => { t.playerIds = (t.playerIds||[]).filter(pid => pid !== id); });
+  saveTeams();
+}
+
+function bumpPlayerStat(playerId, kind){
+  if(!playerId) return;
+  const player = players.find(p => p.id === playerId);
+  if(!player) return;
+  player.gamesPlayed++;
+  if(kind === 'win') player.wins++;
+  else if(kind === 'loss') player.losses++;
+  else player.draws = (player.draws||0) + 1;
+  savePlayers();
+  renderPlayersList();
+}
+
+function loadTeams(){
+  try{
+    const raw = localStorage.getItem('kodfejto_teams');
+    teams = raw ? JSON.parse(raw) : [];
+  } catch(e){
+    teams = [];
+  }
+}
+
+function saveTeams(){
+  try{
+    localStorage.setItem('kodfejto_teams', JSON.stringify(teams));
+  } catch(e){
+    // ha nem elérhető a tárolás, a csapatok csak erre a munkamenetre maradnak meg
+  }
+}
+
+function addTeam(name, playerIds){
+  const team = {
+    id: 'team-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+    name: name,
+    playerIds: playerIds || [],
+    gamesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0
+  };
+  teams.push(team);
+  saveTeams();
+  return team;
+}
+
+function deleteTeam(id){
+  teams = teams.filter(t => t.id !== id);
+  saveTeams();
+}
+
+function bumpTeamStat(teamId, kind){
+  if(!teamId) return;
+  const team = teams.find(t => t.id === teamId);
+  if(!team) return;
+  team.gamesPlayed++;
+  if(kind === 'win') team.wins++;
+  else if(kind === 'loss') team.losses++;
+  else team.draws = (team.draws||0) + 1;
+  saveTeams();
+  renderTeamsList();
+
+  // a csapat minden tagjának egyéni statisztikája is frissül
+  (team.playerIds || []).forEach(pid => bumpPlayerStat(pid, kind));
+}
+
+function renderPlayersList(){
+  const container = document.getElementById('players-list');
+  if(!container) return;
+  if(players.length === 0){
+    container.innerHTML = '<p class="note">Még nincs felvett játékos.</p>';
+    return;
+  }
+  container.innerHTML = players.map(p => `
+    <div class="team-row">
+      <div>
+        <div class="team-name">${escapeHtml(p.name)}</div>
+        <div class="team-stats">${p.gamesPlayed} meccs · ${p.wins}gy / ${p.losses}v${p.draws ? ' / '+p.draws+'d' : ''}</div>
+      </div>
+      <button class="team-delete" data-id="${p.id}">🗑</button>
+    </div>
+  `).join('');
+  container.querySelectorAll('.team-delete').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      deletePlayer(btn.dataset.id);
+      renderPlayersList();
+      renderPlayerPicker();
+      renderTeamsList();
+    });
+  });
+}
+
+function renderPlayerPicker(){
+  const container = document.getElementById('new-team-player-picker');
+  if(!container) return;
+  if(players.length === 0){
+    container.innerHTML = '<p class="note">Előbb vegyél fel legalább egy játékost.</p>';
+    return;
+  }
+  container.innerHTML = players.map(p => `
+    <label class="player-picker-row">
+      <input type="checkbox" value="${p.id}" class="team-player-checkbox">
+      ${escapeHtml(p.name)}
+    </label>
+  `).join('');
+}
+
+function renderTeamsList(){
+  const container = document.getElementById('teams-list');
+  if(!container) return;
+  if(teams.length === 0){
+    container.innerHTML = '<p class="note">Még nincs elmentett csapat.</p>';
+    return;
+  }
+  container.innerHTML = teams.map(t => {
+    const memberNames = (t.playerIds || [])
+      .map(pid => { const p = players.find(pp=>pp.id===pid); return p ? p.name : null; })
+      .filter(Boolean)
+      .join(', ');
+    return `
+    <div class="team-row">
+      <div>
+        <div class="team-name">${escapeHtml(t.name)}</div>
+        <div class="team-stats">${memberNames ? escapeHtml(memberNames) + ' · ' : ''}${t.gamesPlayed} meccs · ${t.wins}gy / ${t.losses}v${t.draws ? ' / '+t.draws+'d' : ''}</div>
+      </div>
+      <button class="team-delete" data-id="${t.id}">🗑</button>
+    </div>
+  `;
+  }).join('');
+  container.querySelectorAll('.team-delete').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      deleteTeam(btn.dataset.id);
+      renderTeamsList();
+      populateTeamSelects();
+    });
+  });
+}
+
+function populateTeamSelects(){
+  const selWhite = document.getElementById('setup-select-white');
+  const selBlack = document.getElementById('setup-select-black');
+  if(!selWhite || !selBlack) return;
+  const options = '<option value="">— kézzel írom be —</option>' +
+    teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  selWhite.innerHTML = options;
+  selBlack.innerHTML = options;
+}
+
+// ---------- teljes játék: szógyűjtemény és generálás ----------
+const WORD_BANK = [
+  'KUTYA','MACSKA','OROSZLÁN','TIGRIS','ELEFÁNT','ZSIRÁF','PINGVIN','DENEVÉR',
+  'RÓKA','FARKAS','MEDVE','NYÚL','EGÉR','PATKÁNY','VARJÚ','SAS',
+  'SÓLYOM','BAGOLY','PÁVA','FLAMINGÓ','DELFIN','CÁPA','BÁLNA','POLIP',
+  'RÁK','TEKNŐS','GYÍK','KAMÉLEON','KROKODIL','ANTILOP','ZEBRA','RINOCÉROSZ',
+  'VÍZILÓ','KENGURU','KOALA','LAJHÁR','SÜN','VAKOND','GÖRÉNY','HIÚZ',
+  'VADKAN','SZARVAS','ŐZ','PÓK','MÉH','HANGYA','PILLANGÓ','SZITAKÖTŐ',
+  'BOGÁR','CSIGA','GILISZTA','SKORPIÓ','KIGYÓ','TERMESZ','SZÚNYOG','LÉGY',
+  'DARÁZS','TETŰ','BOLHA','HERNYÓ','PÓNI','SZAMÁR','KECSKE','JUH',
+  'DISZNÓ','TYÚK','KAKAS','LÚD','KACSA','PULYKA','GALAMB','FECSKE',
+  'GÓLYA','PACSIRTA','FÜLEMÜLE','HOLLÓ','SZARKA','CINKE','HARKÁLY','STRUCC',
+  'HEGY','VÖLGY','SIVATAG','DZSUNGEL','MOCSÁR','GLECCSER','VULKÁN','SZIGET',
+  'FÉLSZIGET','ÖBÖL','VÍZESÉS','BARLANG','SZIKLA','HOMOK','KAVICS','AGYAG',
+  'LÁVA','FÜST','KÖD','HARMAT','DÉR','JÉGESŐ','VILLÁM','MENNYDÖRGÉS',
+  'SZIVÁRVÁNY','NAPFOGYATKOZÁS','ÜSTÖKÖS','METEOR','GALAXIS','ŰRHAJÓ','FOLYÓ','PATAK',
+  'TÓ','TENGER','ÓCEÁN','ERDŐ','RÉT','MEZŐ','LEGELŐ','SZAVANNA',
+  'TUNDRA','SZTYEPPE','GEJZÍR','FORRÁS','ÁRAPÁLY','HULLÁM','FORGÓSZÉL','TORNÁDÓ',
+  'HURRIKÁN','ORKÁN','NAPSÜTÉS','ESŐ','HÓ','ZIVATAR','FAGY','OLVADÁS',
+  'ÁRVÍZ','ASZÁLY','FÖLDRENGÉS','CUNAMI','KALAPÁCS','FŰRÉSZ','CSAVARHÚZÓ','FOGÓ',
+  'LÉTRA','VÖDÖR','SEPRŰ','LAPÁT','GEREBLYE','OLLÓ','TŰ','CÉRNA',
+  'GOMB','ZIPZÁR','ESERNYŐ','NAPSZEMÜVEG','KALAP','SÁL','KESZTYŰ','CIPŐ',
+  'CSIZMA','ÖV','TÁSKA','PÉNZTÁRCA','KULCS','LAKAT','ZÁR','GYERTYA',
+  'LÁMPÁS','ÓRA','ASZTAL','SZÉK','ÁGY','LÁMPA','TÜKÖR','KÉS',
+  'VILLA','KANÁL','TÁNYÉR','POHÁR','KANCSÓ','PÁRNA','TAKARÓ','SZŐNYEG',
+  'FÜGGÖNY','POLC','FIÓK','SZEKRÉNY','VÁZA','KOSÁR','ERNYŐ','SISAK',
+  'MASZK','PÓRÁZ','KETREC','HÁLÓ','KÖTÉL','LÁNC','SZÖG','CSAVAR',
+  'KENYÉR','VAJ','SAJT','TEJ','TOJÁS','LISZT','CUKOR','SÓ',
+  'BORS','FAHÉJ','VANÍLIA','MÉZ','LEKVÁR','PARADICSOM','UBORKA','KRUMPLI',
+  'HAGYMA','FOKHAGYMA','PAPRIKA','SÁRGARÉPA','KÁPOSZTA','SALÁTA','GOMBA','DIÓ',
+  'MOGYORÓ','MANDULA','SZŐLŐ','CSERESZNYE','KÖRTE','ANANÁSZ','ALMA','BANÁN',
+  'NARANCS','CSOKOLÁDÉ','FAGYLALT','PIZZA','LEVES','KÁVÉ','TEA','SONKA',
+  'SZALÁMI','KOLBÁSZ','SZALONNA','PISZTÁCIA','GESZTENYE','ZÖLDBAB','BORSÓ','LENCSE',
+  'RIZS','TÉSZTA','KENYÉRKE','PEREC','KIFLI','ZSEMLE','TORTA','SÜTEMÉNY',
+  'PUDING','JOGHURT','SZABADSÁG','IGAZSÁG','BÖLCSESSÉG','BÁTORSÁG','ALÁZAT','KEGYELEM',
+  'REMÉNY','HIT','KÉTSÉG','FÉLELEM','HARAG','ÖRÖM','BÚSKOMORSÁG','NOSZTALGIA',
+  'EMLÉKEZET','KÉPZELET','ÁLOM','VALÓSÁG','VÉGTELEN','ÖRÖKKÉVALÓSÁG','PILLANAT','SORS',
+  'VÉLETLEN','TÖRVÉNY','SZABÁLY','RENDSZER','KÁOSZ','EGYENSÚLY','HARMÓNIA','ELLENTÉT',
+  'PARADOXON','SZIMMETRIA','ARÁNY','MÉRTÉK','HATÁR','TÁVOLSÁG','KÖZELSÉG','MÉLYSÉG',
+  'MAGASSÁG','SZÉLESSÉG','SZERETET','GYŰLÖLET','FÉLTÉKENYSÉG','BÜSZKESÉG','SZÉGYEN','MEGBÁNÁS',
+  'HÁLA','EGYÜTTÉRZÉS','EMPÁTIA','KÍVÁNCSISÁG','UNALOM','IZGALOM','MEGLEPETÉS','CSALÓDÁS',
+  'ELÉGEDETTSÉG','MAGÁNY','KÖZÖSSÉG','BARÁTSÁG','HŰSÉG','ÁRULÁS','BOSSZÚ','MEGBOCSÁTÁS',
+  'ÖNZÉS','NAGYLELKŰSÉG','TÜRELEM','KITARTÁS','LUSTASÁG','SZORGALOM','TEHETSÉG','ZSENIALITÁS',
+  'ATOM','MOLEKULA','SEJT','GÉN','VÍRUS','BAKTÉRIUM','ENZIM','HORMON',
+  'IDEG','AGY','SZÍV','TÜDŐ','VESE','MÁJ','CSONT','IZOM',
+  'VÉR','OXIGÉN','HIDROGÉN','GRAVITÁCIÓ','MÁGNES','ELEKTROMOSSÁG','LÉZER','RADAR',
+  'MŰHOLD','BOLYGÓ','NEUTRON','PROTON','ELEKTRON','KVANTUM','ENERGIA','ERŐ',
+  'SEBESSÉG','GYORSULÁS','HŐMÉRSÉKLET','NYOMÁS','FREKVENCIA','HULLÁMHOSSZ','SPEKTRUM','KRISTÁLY',
+  'ÁSVÁNY','ÉRC','GYÉMÁNT','ARANY','EZÜST','RÉZ','VAS','ÓN',
+  'ÓLOM','ÜVEG','KIRÁLY','KIRÁLYNŐ','HERCEG','HERCEGNŐ','LOVAG','KATONA',
+  'HARCOS','GLADIÁTOR','FÁRAÓ','CSÁSZÁR','BIRODALOM','KOLOSTOR','KATEDRÁLIS','PIRAMIS',
+  'SZFINX','OBELISZK','PECSÉT','PERGAMEN','TEKERCS','MÚZEUM','SZOBOR','FESTMÉNY',
+  'FRESKÓ','MOZAIK','ÉKSZER','KORONA','JOGAR','ZÁSZLÓ','CÍMER','ERŐD',
+  'VÁR','KASTÉLY','PALOTA','TORONY','HÍD','ALAGÚT','GÁT','CSATORNA',
+  'AKVEDUKT','SÁRKÁNY','EGYSZARVÚ','GRIFF','FŐNIX','SZIRÉN','TRITÓN','KENTAUR',
+  'MINOTAURUSZ','CIKLOPSZ','TÜNDÉR','MANÓ','TÖRPE','ÓRIÁS','BOSZORKÁNY','VARÁZSLÓ',
+  'DÉMON','ANGYAL','SZELLEM','KÍSÉRTET','VÁMPÍR','FARKASEMBER','ZOMBI','ÓRIÁSKÍGYÓ',
+  'HÉNIX','JÓSNŐ','ORÁKULUM','ÁTOK','VARÁZSIGE','TALIZMÁN','LABDARÚGÁS','KOSÁRLABDA',
+  'KÉZILABDA','TENISZ','ASZTALITENISZ','ÚSZÁS','ATLÉTIKA','MARATON','BOKSZ','VÍVÁS',
+  'SAKK','DOMINÓ','KÁRTYA','BILLIÁRD','TEKE','GOLF','SÍELÉS','KORCSOLYA',
+  'SZÖRF','EVEZÉS','TORNA','SÚLYEMELÉS','CSELGÁNCS','KARATE','KUNGFU','RÖPLABDA',
+  'JÉGKORONG','KAJAK','KENU','LOVASPÓLÓ','ORVOS','ÁPOLÓ','TANÁR','MÉRNÖK',
+  'ÉPÍTÉSZ','ÜGYVÉD','BÍRÓ','RENDŐR','TŰZOLTÓ','PILÓTA','KAPITÁNY','SZAKÁCS',
+  'PÉK','MÉSZÁROS','FODRÁSZ','ASZTALOS','KOVÁCS','ÜVEGES','FESTŐ','ZENÉSZ',
+  'ÍRÓ','KÖLTŐ','SZÍNÉSZ','RENDEZŐ','FOTÓS','ÚJSÁGÍRÓ','TOLMÁCS','FORDÍTÓ',
+  'KÖNYVELŐ','BANKÁR','HEGEDŰ','CSELLO','TROMBITA','FUVOLA','KLARINÉT','SZAXOFON',
+  'HÁRFA','XILOFON','BALETT','OPERA','SZÍNHÁZ','MOZI','FOTÓGRÁFIA','SZOBRÁSZAT',
+  'GRAFFITI','ANIMÁCIÓ','RAJZFILM','KARIKATÚRA','KOLLÁZS','ZONGORA','GITÁR','DOB',
+  'HARMONIKA','DUDA','TÁROGATÓ','KÜRT','TUBA','CIMBALOM','LANT','FAGOTT',
+  'ISKOLA','KÓRHÁZ','KÖNYVTÁR','PÁLYAUDVAR','REPÜLŐTÉR','KIKÖTŐ','GYÁR','BÁNYA',
+  'ERŐMŰ','TEMPLOM','MECSET','ZSINAGÓGA','PAGODA','STADION','ARÉNA','GALÉRIA',
+  'PIAC','ÁRUHÁZ','RAKTÁR','VONAT','AUTÓ','BUSZ','VILLAMOS','METRÓ',
+  'HAJÓ','VITORLÁS','TENGERALATTJÁRÓ','HELIKOPTER','REPÜLŐGÉP','RAKÉTA','MOTOR','BICIKLI',
+  'ROLLER','TEHERAUTÓ','MENTŐ','TŰZOLTÓAUTÓ','TRAKTOR','SZÁN','PIROS','KÉK',
+  'ZÖLD','SÁRGA','LILA','FEKETE','FEHÉR','SZÜRKE','BARNA','RÓZSASZÍN',
+  'FA','KŐ','FÉM','MŰANYAG','GUMI','BŐR','SELYEM','GYAPJÚ',
+  'PAMUT','VÁSZON','FEJ','NYAK','VÁLL','KAR','KÉZ','UJJ',
+  'LÁB','TÉRD','BOKA','HÁT','MELL','HAS','SZEM','FÜL',
+  'ORR','SZÁJ','NYELV','FOG','ÁLL','HOMLOK','IDŐ','TÉR',
+  'FÉNY','ÁRNYÉK','HANG','CSEND','ILLAT','ÍZ','SZÍN','FORMA',
+  'MINTA','SZERKEZET','FOLYAMAT','VÁLTOZÁS','FEJLŐDÉS','HANYATLÁS','KEZDET','VÉG',
+  'ÚT','CÉL','TERV','DÖNTÉS','VÁLASZTÁS','LEHETŐSÉG','KOCKÁZAT','BIZTONSÁG',
+  'VESZÉLY','MENEDÉK','REJTEK','KINCS','TÉRKÉP','IRÁNYTŰ','HOROSZKÓP','NAPTÁR',
+  'ÓRAMŰ','HOMOKÓRA','KRISTÁLYGÖMB','VARÁZSPÁLCA','ÜST','SEPRŰNYÉL','LABIRINTUS','REJTVÉNY',
+  'TITOK','KULCSSZÓ','KÓD','ÜZENET','LEVÉL','BORÍTÉK','BÉLYEG','CÍMZETT',
+  'HOLD','NAP','ABLAK','MADÁR','HAL','VIRÁG','KÖNYV','TOLL',
+  'CERUZA','LABDA','KERÉKPÁR','HORGONY','KARD','PAJZS','ÚJSÁG','TELEFON',
+  'SZÁMÍTÓGÉP','BILLENTYŰZET','ROBOT','CSILLAG'
+];
+
+function pickRandomWords(n, exclude){
+  exclude = exclude || [];
+  const pool = WORD_BANK.filter(w => exclude.indexOf(w) === -1);
+  for(let i=pool.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [pool[i],pool[j]] = [pool[j],pool[i]];
+  }
+  return pool.slice(0,n);
+}
+
+function generateCodeDeck(){
+  const all = [];
+  for(let a=1;a<=4;a++){
+    for(let b=1;b<=4;b++){
+      if(b===a) continue;
+      for(let c=1;c<=4;c++){
+        if(c===a || c===b) continue;
+        all.push([a,b,c]);
+      }
+    }
+  }
+  for(let i=all.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [all[i],all[j]] = [all[j],all[i]];
+  }
+  return all;
+}
+
+function setupKeywordPanel(color, words, teamName){
+  currentKeywords[color] = words;
+  const panel = document.getElementById('kwpanel-'+color);
+  const toggle = panel.querySelector('.kw-toggle');
+  const reveal = panel.querySelector('.kw-reveal');
+  const label = teamName ? escapeHtml(teamName) : (color==='white' ? 'Fehér csapat' : 'Fekete csapat');
+  reveal.innerHTML = words.map((w,i)=> '<b>'+(i+1)+':</b> '+w).join('<br>');
+  reveal.style.display = 'none';
+  toggle.dataset.label = label;
+  toggle.textContent = '👁 ' + label + ' kulcsszavai';
+  toggle.onclick = ()=>{
+    const showing = reveal.style.display === 'block';
+    reveal.style.display = showing ? 'none' : 'block';
+    toggle.textContent = showing ? ('👁 ' + label + ' kulcsszavai') : ('🙈 Elrejtem (' + label + ')');
+  };
+}
+
+function setupCodeBox(color, roundNum, codeArr){
+  const box = document.querySelector('#rounds-'+color+' .code-box[data-round="'+roundNum+'"]');
+  if(!box) return;
+  const hiddenEl = box.querySelector('.code-hidden');
+  const revealedEl = box.querySelector('.code-revealed');
+  const peekBtn = box.querySelector('.peek-btn');
+  const hideBtn = box.querySelector('.hide-btn');
+  const finalizeBtn = box.querySelector('.finalize-btn');
+
+  box.dataset.secret = codeArr.join(',');
+  box.classList.remove('finalized');
+  hiddenEl.style.display = 'block';
+  hiddenEl.textContent = '🔒 Kód rejtve';
+  revealedEl.style.display = 'none';
+  peekBtn.style.display = 'inline-block';
+  hideBtn.style.display = 'none';
+  finalizeBtn.style.display = 'inline-block';
+
+  peekBtn.onclick = ()=>{
+    revealedEl.textContent = 'Kód: ' + codeArr.join(' . ');
+    hiddenEl.style.display = 'none';
+    revealedEl.style.display = 'block';
+    peekBtn.style.display = 'none';
+    hideBtn.style.display = 'inline-block';
+  };
+  hideBtn.onclick = ()=>{
+    hiddenEl.style.display = 'block';
+    revealedEl.style.display = 'none';
+    peekBtn.style.display = 'inline-block';
+    hideBtn.style.display = 'none';
+  };
+  finalizeBtn.onclick = ()=>{
+    const card = box.closest('.round-card');
+    const actualBoxes = card.querySelectorAll('.digit-box.actual');
+    actualBoxes.forEach((inp,i)=>{
+      inp.value = codeArr[i];
+      inp.readOnly = true;
+    });
+    hiddenEl.style.display = 'none';
+    revealedEl.style.display = 'block';
+    revealedEl.textContent = '✅ Végleges kód: ' + codeArr.join(' . ');
+    peekBtn.style.display = 'none';
+    hideBtn.style.display = 'none';
+    finalizeBtn.style.display = 'none';
+    box.classList.add('finalized');
+
+    refreshRoundGating(color);
+    applyTeamAccess();
+    recomputeAll();
+
+    if(currentRoom && !applyingRemote){
+      pushRoundReveal(color, roundNum, codeArr);
+    }
+  };
+}
+
+function refreshRoundGating(color){
+  for(let r=1; r<=8; r++){
+    const box = document.querySelector('#rounds-'+color+' .code-box[data-round="'+r+'"]');
+    if(!box || box.classList.contains('finalized')) continue;
+    const prevBox = (r>1) ? document.querySelector('#rounds-'+color+' .code-box[data-round="'+(r-1)+'"]') : null;
+    const unlocked = (r===1) || (prevBox && prevBox.classList.contains('finalized'));
+    box.dataset.available = unlocked ? 'true' : 'false';
+
+    const hiddenEl = box.querySelector('.code-hidden');
+    const peekBtn = box.querySelector('.peek-btn');
+    const hideBtn = box.querySelector('.hide-btn');
+    const finalizeBtn = box.querySelector('.finalize-btn');
+
+    if(!unlocked){
+      hiddenEl.style.display = 'block';
+      hiddenEl.textContent = '⏳ Ez a kód majd az előző forduló lezárása után nyílik meg';
+      peekBtn.style.display = 'none';
+      hideBtn.style.display = 'none';
+      finalizeBtn.style.display = 'none';
+    }
+    // ha unlocked, az applyTeamAccess dönti el, ki lássa a "nézd meg" gombot
+  }
+}
+
+function applyTeamAccess(){
+  ['white','black'].forEach(color=>{
+    const isOwn = (color === selectedTeam);
+
+    const statusEl = document.getElementById('status-'+color);
+    if(statusEl){
+      if(isOwn){
+        statusEl.textContent = 'Ti vagytok ez a csapat – a saját kódotok itt rejtve marad felfedésig';
+        statusEl.className = 'side-status own';
+      } else {
+        statusEl.textContent = 'Ellenfél csapata – az ő kódjuk nálatok rejtve marad';
+        statusEl.className = 'side-status opp';
+      }
+    }
+
+    const kwpanel = document.getElementById('kwpanel-'+color);
+    if(kwpanel){
+      const toggle = kwpanel.querySelector('.kw-toggle');
+      const reveal = kwpanel.querySelector('.kw-reveal');
+      reveal.style.display = 'none';
+      if(isOwn){
+        toggle.disabled = false;
+        toggle.classList.remove('locked');
+        const label = toggle.dataset.label || (color==='white' ? 'Fehér csapat' : 'Fekete csapat');
+        toggle.textContent = '👁 ' + label + ' kulcsszavai';
+      } else {
+        toggle.disabled = true;
+        toggle.classList.add('locked');
+        toggle.textContent = '🔒 Ellenfél kulcsszavai (rejtve)';
+      }
+    }
+
+    document.querySelectorAll('#rounds-'+color+' .code-box').forEach(box=>{
+      if(box.classList.contains('finalized')) return; // már mindenki előtt felfedve, nincs mit zárolni
+      if(box.dataset.available !== 'true') return; // még nincs kód hozzárendelve, az előző kör nincs lezárva
+      const peekBtn = box.querySelector('.peek-btn');
+      const hideBtn = box.querySelector('.hide-btn');
+      const hiddenEl = box.querySelector('.code-hidden');
+      const revealedEl = box.querySelector('.code-revealed');
+      revealedEl.style.display = 'none';
+      hiddenEl.style.display = 'block';
+      hiddenEl.classList.toggle('locked', !isOwn);
+      if(isOwn){
+        peekBtn.style.display = 'inline-block';
+        hideBtn.style.display = 'none';
+        hiddenEl.textContent = '🔒 Kód rejtve';
+      } else {
+        peekBtn.style.display = 'none';
+        hideBtn.style.display = 'none';
+        hiddenEl.textContent = '🔒 Ellenfél kódja (csak ők láthatják)';
+      }
+    });
+  });
+
+  applyGuessLocks();
+}
+
+function applyGuessLocks(){
+  const showWhite = (selectedTeam === 'white');
+
+  document.querySelectorAll('.digit-box.guess-white').forEach(inp=>{
+    inp.classList.toggle('col-hidden', !showWhite);
+    inp.type = 'text';
+    inp.readOnly = false;
+  });
+  document.querySelectorAll('.digit-box.guess-black').forEach(inp=>{
+    inp.classList.toggle('col-hidden', showWhite);
+    inp.type = 'text';
+    inp.readOnly = false;
+  });
+  document.querySelectorAll('.ch-white').forEach(el=> el.classList.toggle('col-hidden', !showWhite));
+  document.querySelectorAll('.ch-black').forEach(el=> el.classList.toggle('col-hidden', showWhite));
+}
+
+function startFullGame(wName, bName, whiteTeamId, blackTeamId){
+  currentGameTeams = {
+    white: {id: whiteTeamId || null, name: wName},
+    black: {id: blackTeamId || null, name: bName}
+  };
+  gameConcluded = false;
+
+  const whiteKeywords = pickRandomWords(4);
+  const blackKeywords = pickRandomWords(4, whiteKeywords);
+  setupKeywordPanel('white', whiteKeywords, wName);
+  setupKeywordPanel('black', blackKeywords, bName);
+
+  const whiteCodes = generateCodeDeck().slice(0,8);
+  const blackCodes = generateCodeDeck().slice(0,8);
+
+  for(let r=1;r<=8;r++){
+    setupCodeBox('white', r, whiteCodes[r-1]);
+    setupCodeBox('black', r, blackCodes[r-1]);
+  }
+  refreshRoundGating('white');
+  refreshRoundGating('black');
+
+  document.querySelectorAll('.digit-box.actual').forEach(inp=>{
+    inp.value = '';
+    inp.readOnly = true;
+  });
+  document.body.classList.add('mode-full');
+  applyTeamAccess();
+
+  if(currentRoom && isHost && !applyingRemote){
+    pushFullGameStart(wName, bName, whiteKeywords, blackKeywords, whiteCodes, blackCodes);
+  }
+}
+
+function buildRounds(containerId){
+  const el = document.getElementById(containerId);
+  let html = '';
+  for(let r=1;r<=8;r++){
+    const num = String(r).padStart(2,'0');
+    html += `
+      <div class="round-card" data-round="${r}">
+        <div class="round-head">
+          <span># ${num}</span>
+          <span class="round-status-badge">…</span>
+        </div>
+        <div class="clue-line-header">
+          <span class="ch-word"></span>
+          <span class="ch-guess ch-white">⚪</span>
+          <span class="ch-guess ch-black">⚫</span>
+          <span class="ch-actual">Valós</span>
+        </div>
+        <div class="clue-line" data-line="0">
+          <input type="text" class="clue-word" placeholder="1. kulcsszó">
+          <input type="text" class="digit-box guess-white" maxlength="1" inputmode="numeric" title="Fehér csapat tippje (1-4)" placeholder="?">
+          <input type="text" class="digit-box guess-black" maxlength="1" inputmode="numeric" title="Fekete csapat tippje (1-4)" placeholder="?">
+          <input type="text" class="digit-box actual" maxlength="1" inputmode="numeric" title="Valós szám (1-4)" placeholder="–">
+        </div>
+        <div class="clue-line" data-line="1">
+          <input type="text" class="clue-word" placeholder="2. kulcsszó">
+          <input type="text" class="digit-box guess-white" maxlength="1" inputmode="numeric" title="Fehér csapat tippje (1-4)" placeholder="?">
+          <input type="text" class="digit-box guess-black" maxlength="1" inputmode="numeric" title="Fekete csapat tippje (1-4)" placeholder="?">
+          <input type="text" class="digit-box actual" maxlength="1" inputmode="numeric" title="Valós szám (1-4)" placeholder="–">
+        </div>
+        <div class="clue-line" data-line="2">
+          <input type="text" class="clue-word" placeholder="3. kulcsszó">
+          <input type="text" class="digit-box guess-white" maxlength="1" inputmode="numeric" title="Fehér csapat tippje (1-4)" placeholder="?">
+          <input type="text" class="digit-box guess-black" maxlength="1" inputmode="numeric" title="Fekete csapat tippje (1-4)" placeholder="?">
+          <input type="text" class="digit-box actual" maxlength="1" inputmode="numeric" title="Valós szám (1-4)" placeholder="–">
+        </div>
+        <div class="round-result-row"></div>
+        <div class="code-box full-mode-only" data-round="${r}">
+          <div class="code-hidden">🔒 Kód rejtve</div>
+          <div class="code-revealed" style="display:none"></div>
+          <button class="peek-btn">👁 Rejtjelező: nézd meg</button>
+          <button class="hide-btn" style="display:none">🙈 Elrejtem</button>
+          <button class="finalize-btn">✅ Kör vége – felfedés</button>
+        </div>
+      </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function buildKeywords(containerId){
+  const el = document.getElementById(containerId);
+  let html = '';
+  for(let k=1;k<=4;k++){
+    html += `
+      <div class="keyword-card" data-num="${k}">
+        <div class="keyword-head">🔑 ${k}</div>
+        <div class="keyword-list"><span class="empty">még nincs utalás</span></div>
+      </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function buildPips(color){
+  const pipsEl = document.getElementById('pips-'+color);
+  let html = '';
+  for(let r=1;r<=8;r++){
+    html += `<button class="round-pip" data-color="${color}" data-round="${r}">${r}</button>`;
+  }
+  pipsEl.innerHTML = html;
+  pipsEl.querySelectorAll('.round-pip').forEach(pip=>{
+    pip.addEventListener('click', ()=>{
+      currentRound[color] = parseInt(pip.dataset.round);
+      showRound(color);
+    });
+  });
+}
+
+function showRound(color){
+  const container = document.getElementById('rounds-'+color);
+  const nav = document.getElementById('nav-'+color);
+  const toggleBtn = document.getElementById('overview-'+color);
+
+  if(overviewMode[color]){
+    container.classList.add('show-all');
+    nav.classList.add('hidden');
+    toggleBtn.textContent = '👁 Vissza egy fordulóra';
+  } else {
+    container.classList.remove('show-all');
+    nav.classList.remove('hidden');
+    toggleBtn.textContent = '👁 Összes forduló mutatása';
+  }
+
+  container.querySelectorAll('.round-card').forEach(card=>{
+    const r = parseInt(card.dataset.round);
+    card.classList.toggle('current-round', r === currentRound[color]);
+  });
+  document.getElementById('pips-'+color).querySelectorAll('.round-pip').forEach(pip=>{
+    pip.classList.toggle('current', parseInt(pip.dataset.round) === currentRound[color]);
+  });
+}
+
+['white','black'].forEach(color=>{
+  buildRounds('rounds-'+color);
+  buildKeywords('keywords-'+color);
+  buildPips(color);
+  showRound(color);
+
+  document.getElementById('prev-'+color).addEventListener('click', ()=>{
+    currentRound[color] = currentRound[color] > 1 ? currentRound[color]-1 : 8;
+    showRound(color);
+  });
+  document.getElementById('next-'+color).addEventListener('click', ()=>{
+    currentRound[color] = currentRound[color] < 8 ? currentRound[color]+1 : 1;
+    showRound(color);
+  });
+  document.getElementById('overview-'+color).addEventListener('click', ()=>{
+    overviewMode[color] = !overviewMode[color];
+    showRound(color);
+  });
+});
+
+// restrict digit boxes to 1-4
+document.querySelectorAll('.digit-box').forEach(box=>{
+  box.addEventListener('input', ()=>{
+    box.value = box.value.replace(/[^1-4]/g,'').slice(0,1);
+    recomputeAll();
+    if(!box.classList.contains('actual')) scheduleSync(box);
+  });
+});
+document.querySelectorAll('.clue-word').forEach(w=>{
+  w.addEventListener('input', ()=>{
+    recomputeAll();
+    scheduleSync(w);
+  });
+});
+
+function recomputeAll(){
+  // Négy független számláló: mindkét csapat saját elfogása és félreértése,
+  // a fehér/fekete tipp-oszlopok alapján - a "melyik csapat vagy" választótól függetlenül.
+  const counts = {
+    white: {intercepts:0, miscoms:0},
+    black: {intercepts:0, miscoms:0}
+  };
+
+  ['white','black'].forEach(color=>{
+    // ezen az oldalon 'color' csapat rejtjelez; az ellenfele próbálja elfogni
+    const opponent = (color === 'white') ? 'black' : 'white';
+    const sheet = document.getElementById('sheet-'+color);
+    const keywordBuckets = {1:[],2:[],3:[],4:[]};
+
+    sheet.querySelectorAll('.round-card').forEach(card=>{
+      const lines = card.querySelectorAll('.clue-line');
+      let guessWhite = [], guessBlack = [], actuals = [], words = [];
+      lines.forEach(line=>{
+        const word = line.querySelector('.clue-word').value.trim();
+        const gw = line.querySelector('.digit-box.guess-white').value.trim();
+        const gb = line.querySelector('.digit-box.guess-black').value.trim();
+        const actual = line.querySelector('.digit-box.actual').value.trim();
+        guessWhite.push(gw);
+        guessBlack.push(gb);
+        actuals.push(actual);
+        words.push(word);
+        if(actual && word){
+          keywordBuckets[actual].push(word);
+        }
+      });
+
+      const badge = card.querySelector('.round-status-badge');
+      const resultRow = card.querySelector('.round-result-row');
+      const allActualsFilled = actuals.every(a=>a.length===1);
+      const ownGuessFilled = (color==='white' ? guessWhite : guessBlack).every(g=>g.length===1);
+      const oppGuessFilled = (color==='white' ? guessBlack : guessWhite).every(g=>g.length===1);
+
+      const roundNum = card.dataset.round;
+      const pip = document.querySelector(`.round-pip[data-color="${color}"][data-round="${roundNum}"]`);
+      card.classList.remove('result-good','result-bad');
+      badge.classList.remove('good','bad');
+      if(pip) pip.classList.remove('pip-good','pip-bad');
+
+      let resultHtml = '';
+      let anyBad = false, anyGood = false;
+
+      if(!allActualsFilled){
+        badge.textContent = '…';
+      } else {
+        // saját csapat (color) dekódolási kísérlete a saját kódjára -> félreértés, ha eltér
+        const ownGuess = (color==='white') ? guessWhite : guessBlack;
+        if(ownGuessFilled){
+          const ownMatch = ownGuess[0]===actuals[0] && ownGuess[1]===actuals[1] && ownGuess[2]===actuals[2];
+          if(ownMatch){
+            resultHtml += `<div class="result-line neutral">${color==='white'?'⚪':'⚫'} saját csapat: ✔ megértette</div>`;
+          } else {
+            resultHtml += `<div class="result-line bad">${color==='white'?'⚪':'⚫'} saját csapat: ✖ félreértette</div>`;
+            counts[color].miscoms++;
+            anyBad = true;
+          }
+        } else {
+          resultHtml += `<div class="result-line neutral">${color==='white'?'⚪':'⚫'} saját csapat tippje hiányzik</div>`;
+        }
+
+        // ellenfél (opponent) elfogási kísérlete
+        const oppGuess = (color==='white') ? guessBlack : guessWhite;
+        if(oppGuessFilled){
+          const oppMatch = oppGuess[0]===actuals[0] && oppGuess[1]===actuals[1] && oppGuess[2]===actuals[2];
+          if(oppMatch){
+            resultHtml += `<div class="result-line good">${opponent==='white'?'⚪':'⚫'} ellenfél: ✔ elfogta a kódot</div>`;
+            counts[opponent].intercepts++;
+            anyGood = true;
+          } else {
+            resultHtml += `<div class="result-line neutral">${opponent==='white'?'⚪':'⚫'} ellenfél: ✖ nem sikerült elfognia</div>`;
+          }
+        } else {
+          resultHtml += `<div class="result-line neutral">${opponent==='white'?'⚪':'⚫'} ellenfél tippje hiányzik</div>`;
+        }
+
+        if(anyBad){ badge.textContent = '✖'; badge.classList.add('bad'); card.classList.add('result-bad'); if(pip) pip.classList.add('pip-bad'); }
+        else if(anyGood){ badge.textContent = '✔'; badge.classList.add('good'); card.classList.add('result-good'); if(pip) pip.classList.add('pip-good'); }
+        else { badge.textContent = '–'; }
+      }
+
+      if(resultRow) resultRow.innerHTML = resultHtml;
+    });
+
+    // update keyword aggregation
+    const kwContainer = document.getElementById('keywords-'+color);
+    kwContainer.querySelectorAll('.keyword-card').forEach(kc=>{
+      const num = kc.dataset.num;
+      const words = keywordBuckets[num];
+      if(words.length===0){
+        kc.querySelector('.keyword-list').innerHTML = '<span class="empty">még nincs utalás</span>';
+      } else {
+        kc.querySelector('.keyword-list').innerHTML = words.map(w=>escapeHtml(w)).join('<br>');
+      }
+    });
+  });
+
+  // scoreboard - mindkét csapat saját, objektív állása
+  document.getElementById('pillWhiteIntercept').textContent = `Elfogás: ${counts.white.intercepts}/2`;
+  document.getElementById('pillWhiteMiscom').textContent = `Félreértés: ${counts.white.miscoms}/2`;
+  document.getElementById('pillBlackIntercept').textContent = `Elfogás: ${counts.black.intercepts}/2`;
+  document.getElementById('pillBlackMiscom').textContent = `Félreértés: ${counts.black.miscoms}/2`;
+  document.getElementById('pillWhiteIntercept').classList.toggle('win', counts.white.intercepts>=2);
+  document.getElementById('pillWhiteMiscom').classList.toggle('lose', counts.white.miscoms>=2);
+  document.getElementById('pillBlackIntercept').classList.toggle('win', counts.black.intercepts>=2);
+  document.getElementById('pillBlackMiscom').classList.toggle('lose', counts.black.miscoms>=2);
+
+  const whiteWins = counts.white.intercepts >= 2;
+  const whiteLoses = counts.white.miscoms >= 2;
+  const blackWins = counts.black.intercepts >= 2;
+  const blackLoses = counts.black.miscoms >= 2;
+
+  const banner = document.getElementById('banner');
+  let outcome = null; // {winner, loser} vagy 'draw'
+
+  if(whiteWins && blackWins){
+    banner.textContent = '⚖️ Mindkét csapat elfogta egymás kódját kétszer – döntetlen, nézd meg a szabályt!';
+    outcome = 'draw';
+  } else if(whiteLoses && blackLoses){
+    banner.textContent = '⚖️ Mindkét csapat kétszer félreértette a sajátját – döntetlen, nézd meg a szabályt!';
+    outcome = 'draw';
+  } else if(whiteWins){
+    banner.textContent = '🏆 A Fehér csapat nyert! (2 sikeres kódelfogás)';
+    outcome = {winner:'white', loser:'black'};
+  } else if(blackWins){
+    banner.textContent = '🏆 A Fekete csapat nyert! (2 sikeres kódelfogás)';
+    outcome = {winner:'black', loser:'white'};
+  } else if(whiteLoses){
+    banner.textContent = '💢 A Fehér csapat kétszer félreértette a kódját – a Fekete csapat nyert!';
+    outcome = {winner:'black', loser:'white'};
+  } else if(blackLoses){
+    banner.textContent = '💢 A Fekete csapat kétszer félreértette a kódját – a Fehér csapat nyert!';
+    outcome = {winner:'white', loser:'black'};
+  } else {
+    banner.textContent = '';
+  }
+
+  if(outcome && !gameConcluded){
+    gameConcluded = true;
+    recordGameResult(outcome);
+  }
+
+  saveLocalGame();
+}
+
+function recordGameResult(outcome){
+  const whiteId = currentGameTeams.white ? currentGameTeams.white.id : null;
+  const blackId = currentGameTeams.black ? currentGameTeams.black.id : null;
+
+  if(outcome === 'draw'){
+    bumpTeamStat(whiteId, 'draw');
+    bumpTeamStat(blackId, 'draw');
+  } else {
+    const winnerId = (outcome.winner === 'white') ? whiteId : blackId;
+    const loserId = (outcome.loser === 'white') ? whiteId : blackId;
+    bumpTeamStat(winnerId, 'win');
+    bumpTeamStat(loserId, 'loss');
+  }
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---------- helyi játék mentése/folytatása (böngésző saját tárolója, csak nem-szoba módban) ----------
+const LOCAL_GAME_KEY = 'kodfejto_local_game_v1';
+const ROOM_SESSION_KEY = 'kodfejto_room_session_v1';
+
+function serializeLocalGame(){
+  const rounds = {white:{}, black:{}};
+  ['white','black'].forEach(color=>{
+    for(let r=1; r<=8; r++){
+      const card = document.querySelector('#rounds-'+color+' .round-card[data-round="'+r+'"]');
+      if(!card) continue;
+      const box = card.querySelector('.code-box');
+      let secret = [0,0,0];
+      if(box && box.dataset.secret){
+        secret = box.dataset.secret.split(',').map(Number);
+      }
+      const entry = {
+        clue0:'', clue1:'', clue2:'',
+        gw0:'', gw1:'', gw2:'',
+        gb0:'', gb1:'', gb2:'',
+        actual0:'', actual1:'', actual2:'',
+        secret: secret,
+        finalized: box ? box.classList.contains('finalized') : false
+      };
+      const lines = card.querySelectorAll('.clue-line');
+      lines.forEach((line,i)=>{
+        entry['clue'+i] = line.querySelector('.clue-word').value;
+        entry['gw'+i] = line.querySelector('.digit-box.guess-white').value;
+        entry['gb'+i] = line.querySelector('.digit-box.guess-black').value;
+        entry['actual'+i] = line.querySelector('.digit-box.actual').value;
+      });
+      rounds[color][r] = entry;
+    }
+  });
+
+  return {
+    savedAt: Date.now(),
+    teamNames: {
+      white: (currentGameTeams.white && currentGameTeams.white.name) || 'Fehér csapat',
+      black: (currentGameTeams.black && currentGameTeams.black.name) || 'Fekete csapat'
+    },
+    teamIds: {
+      white: (currentGameTeams.white && currentGameTeams.white.id) || null,
+      black: (currentGameTeams.black && currentGameTeams.black.id) || null
+    },
+    selectedTeam: selectedTeam,
+    gameConcluded: gameConcluded,
+    currentRound: {white: currentRound.white, black: currentRound.black},
+    rounds: rounds,
+    keywords: {white: currentKeywords.white || [], black: currentKeywords.black || []}
+  };
+}
+
+function saveLocalGame(){
+  if(currentRoom) return; // szoba-játéknál a Firestore az igazság forrása, nem mentünk helyben
+  if(!document.body.classList.contains('mode-full')) return;
+  try{
+    localStorage.setItem(LOCAL_GAME_KEY, JSON.stringify(serializeLocalGame()));
+  } catch(e){
+    console.error('helyi mentési hiba:', e);
+  }
+}
+
+function loadLocalGame(){
+  try{
+    const raw = localStorage.getItem(LOCAL_GAME_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e){
+    return null;
+  }
+}
+
+function clearLocalGame(){
+  try{ localStorage.removeItem(LOCAL_GAME_KEY); } catch(e){}
+}
+
+function restoreLocalGame(data){
+  currentGameTeams = {
+    white: {id: data.teamIds.white, name: data.teamNames.white},
+    black: {id: data.teamIds.black, name: data.teamNames.black}
+  };
+  gameConcluded = !!data.gameConcluded;
+  selectedTeam = data.selectedTeam || 'white';
+  document.getElementById('btnTeamWhite').classList.toggle('active-white', selectedTeam==='white');
+  document.getElementById('btnTeamBlack').classList.toggle('active-black', selectedTeam==='black');
+
+  setupKeywordPanel('white', data.keywords.white || [], data.teamNames.white);
+  setupKeywordPanel('black', data.keywords.black || [], data.teamNames.black);
+
+  ['white','black'].forEach(color=>{
+    for(let r=1; r<=8; r++){
+      const rd = data.rounds[color] && data.rounds[color][r];
+      if(!rd) continue;
+      setupCodeBox(color, r, rd.secret);
+      const card = document.querySelector('#rounds-'+color+' .round-card[data-round="'+r+'"]');
+      const lines = card.querySelectorAll('.clue-line');
+      lines.forEach((line,i)=>{
+        line.querySelector('.clue-word').value = rd['clue'+i] || '';
+        line.querySelector('.digit-box.guess-white').value = rd['gw'+i] || '';
+        line.querySelector('.digit-box.guess-black').value = rd['gb'+i] || '';
+      });
+      if(rd.finalized){
+        const box = card.querySelector('.code-box');
+        const actualBoxes = card.querySelectorAll('.digit-box.actual');
+        actualBoxes.forEach((inp,i)=>{ inp.value = rd['actual'+i]; inp.readOnly = true; });
+        box.querySelector('.code-hidden').style.display = 'none';
+        const revealedEl = box.querySelector('.code-revealed');
+        revealedEl.style.display = 'block';
+        revealedEl.textContent = '✅ Végleges kód: ' + rd.secret.join(' . ');
+        box.querySelector('.peek-btn').style.display = 'none';
+        box.querySelector('.hide-btn').style.display = 'none';
+        box.querySelector('.finalize-btn').style.display = 'none';
+        box.classList.add('finalized');
+      }
+    }
+  });
+  refreshRoundGating('white');
+  refreshRoundGating('black');
+
+  document.body.classList.add('mode-full');
+  applyTeamAccess();
+
+  currentRound = data.currentRound || {white:1, black:1};
+  overviewMode = {white:false, black:false};
+  showRound('white');
+  showRound('black');
+  recomputeAll();
+  showScreen('lap');
+}
+
+// team selection
+document.getElementById('btnTeamWhite').addEventListener('click', ()=>{
+  selectedTeam = 'white';
+  document.getElementById('btnTeamWhite').classList.add('active-white');
+  document.getElementById('btnTeamBlack').classList.remove('active-black');
+  applyTeamAccess();
+  recomputeAll();
+});
+document.getElementById('btnTeamBlack').addEventListener('click', ()=>{
+  selectedTeam = 'black';
+  document.getElementById('btnTeamBlack').classList.add('active-black');
+  document.getElementById('btnTeamWhite').classList.remove('active-white');
+  applyTeamAccess();
+  recomputeAll();
+});
+
+// flip white/black page view
+const flipBtn = document.getElementById('flipBtn');
+flipBtn.addEventListener('click', ()=>{
+  const white = document.getElementById('sheet-white');
+  const black = document.getElementById('sheet-black');
+  if(currentVisible === 'white'){
+    white.classList.remove('active');
+    black.classList.add('active');
+    document.body.classList.add('theme-black');
+    flipBtn.textContent = '🔄 Lapozás: Fehér oldalra';
+    currentVisible = 'black';
+  } else {
+    black.classList.remove('active');
+    white.classList.add('active');
+    document.body.classList.remove('theme-black');
+    flipBtn.textContent = '🔄 Lapozás: Fekete oldalra';
+    currentVisible = 'white';
+  }
+});
+
+// reset (two-tap confirm, since native confirm() dialogs can be blocked in some webviews)
+const resetBtn = document.getElementById('resetBtn');
+let resetArmed = false;
+let resetArmTimeout = null;
+
+resetBtn.addEventListener('click', ()=>{
+  if(!resetArmed){
+    resetArmed = true;
+    resetBtn.textContent = 'Biztos? Koppints újra';
+    clearTimeout(resetArmTimeout);
+    resetArmTimeout = setTimeout(()=>{
+      resetArmed = false;
+      resetBtn.textContent = 'Új játék';
+    }, 3000);
+    return;
+  }
+
+  clearTimeout(resetArmTimeout);
+  resetArmed = false;
+  resetBtn.textContent = 'Új játék';
+
+  if(document.body.classList.contains('mode-full')){
+    // teljes játék mód: friss kulcsszavak és kódok sorsolása, ugyanazzal a két csapattal
+    startFullGame(
+      currentGameTeams.white.name,
+      currentGameTeams.black.name,
+      currentGameTeams.white.id,
+      currentGameTeams.black.id
+    );
+    document.querySelectorAll('.sheet input.clue-word, .sheet input.guess-white, .sheet input.guess-black').forEach(i=> i.value = '');
+  } else {
+    // csak lap mód: egyszerű törlés, saját fizikai kártyákkal folytatjátok
+    document.querySelectorAll('.sheet input[type="text"]').forEach(i=> i.value = '');
+  }
+
+  currentRound = {white:1, black:1};
+  overviewMode = {white:false, black:false};
+  showRound('white');
+  showRound('black');
+  recomputeAll();
+});
+
+recomputeAll();
+
+// discreet scroll-to-top button
+const scrollTopBtn = document.getElementById('scrollTopBtn');
+window.addEventListener('scroll', ()=>{
+  scrollTopBtn.classList.toggle('visible', window.scrollY > 150);
+});
+scrollTopBtn.addEventListener('click', ()=>{
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+// ---------- képernyőváltás: menü / beállítás / csapatok / lap ----------
+const screenMenu = document.getElementById('screen-menu');
+const screenSetup = document.getElementById('screen-setup');
+const screenTeams = document.getElementById('screen-teams');
+const screenLap = document.getElementById('screen-lap');
+
+function showScreen(name){
+  screenMenu.style.display = (name==='menu') ? 'block' : 'none';
+  screenSetup.style.display = (name==='setup') ? 'block' : 'none';
+  screenTeams.style.display = (name==='teams') ? 'block' : 'none';
+  screenLap.style.display = (name==='lap') ? 'block' : 'none';
+  document.querySelector('.toolbar').style.display = (name==='lap') ? 'flex' : 'none';
+  document.getElementById('sandTimerBtn').style.display = (name==='lap') ? 'flex' : 'none';
+
+  if(name !== 'lap'){
+    document.body.classList.remove('theme-black');
+    if(currentVisible === 'black'){
+      document.getElementById('sheet-black').classList.remove('active');
+      document.getElementById('sheet-white').classList.add('active');
+      currentVisible = 'white';
+      flipBtn.textContent = '🔄 Lapozás: Fekete oldalra';
+    }
+  }
+
+  window.scrollTo({top:0});
+}
+
+document.getElementById('btn-goto-lap').addEventListener('click', ()=>{
+  document.body.classList.remove('mode-full');
+  document.querySelectorAll('.digit-box.actual').forEach(inp=>{ inp.readOnly = false; });
+  applyGuessLocks();
+  showScreen('lap');
+});
+
+document.getElementById('btn-goto-setup').addEventListener('click', ()=>{
+  populateTeamSelects();
+  showScreen('setup');
+});
+
+document.getElementById('btn-setup-back').addEventListener('click', ()=>{
+  showScreen('menu');
+});
+
+document.getElementById('btn-goto-teams').addEventListener('click', ()=>{
+  renderPlayersList();
+  renderPlayerPicker();
+  renderTeamsList();
+  showScreen('teams');
+});
+
+document.getElementById('btn-teams-back').addEventListener('click', ()=>{
+  showScreen('menu');
+});
+
+document.getElementById('btn-add-player').addEventListener('click', ()=>{
+  const input = document.getElementById('new-player-name');
+  const name = input.value.trim();
+  if(!name) return;
+  addPlayer(name);
+  input.value = '';
+  renderPlayersList();
+  renderPlayerPicker();
+});
+
+document.getElementById('btn-add-team').addEventListener('click', ()=>{
+  const input = document.getElementById('new-team-name');
+  const typedName = input.value.trim();
+  const selectedPlayerIds = Array.from(document.querySelectorAll('.team-player-checkbox:checked'))
+    .map(cb => cb.value);
+
+  let name = typedName;
+  if(!name){
+    const selectedNames = selectedPlayerIds
+      .map(pid => { const p = players.find(pp=>pp.id===pid); return p ? p.name : null; })
+      .filter(Boolean);
+    name = selectedNames.join(' & ');
+  }
+
+  if(!name){
+    return; // sem név, sem kiválasztott játékos - nincs mit létrehozni
+  }
+
+  addTeam(name, selectedPlayerIds);
+  input.value = '';
+  renderTeamsList();
+  renderPlayerPicker();
+});
+
+document.getElementById('setup-select-white').addEventListener('change', (e)=>{
+  const id = e.target.value;
+  const team = teams.find(t=>t.id===id);
+  if(team) document.getElementById('setup-name-white').value = team.name;
+});
+document.getElementById('setup-select-black').addEventListener('change', (e)=>{
+  const id = e.target.value;
+  const team = teams.find(t=>t.id===id);
+  if(team) document.getElementById('setup-name-black').value = team.name;
+});
+
+document.getElementById('btn-start-game').addEventListener('click', ()=>{
+  const wSelectId = document.getElementById('setup-select-white').value || null;
+  const bSelectId = document.getElementById('setup-select-black').value || null;
+  const wName = document.getElementById('setup-name-white').value.trim() || 'Fehér csapat';
+  const bName = document.getElementById('setup-name-black').value.trim() || 'Fekete csapat';
+  startFullGame(wName, bName, wSelectId, bSelectId);
+  document.querySelectorAll('.sheet input[type="text"].clue-word, .sheet input.guess-white, .sheet input.guess-black').forEach(i=> i.value='');
+  currentRound = {white:1, black:1};
+  overviewMode = {white:false, black:false};
+  showRound('white');
+  showRound('black');
+  recomputeAll();
+  showScreen('lap');
+});
+
+document.getElementById('menuBtn').addEventListener('click', ()=>{
+  showScreen('menu');
+});
+
+loadPlayers();
+loadTeams();
+
+// toolbar hidden until a screen is chosen
+document.querySelector('.toolbar').style.display = 'none';
+document.getElementById('sandTimerBtn').style.display = 'none';
+
+// 30 másodperces digitális homokóra (bármikor "megfordítható")
+let sandTimerInterval = null;
+let sandTimerRemaining = 30;
+const sandTimerBtn = document.getElementById('sandTimerBtn');
+
+function playBeep(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.15;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    setTimeout(()=>{ osc.stop(); ctx.close(); }, 350);
+  } catch(e){ /* hangkimenet nem elérhető, nem baj */ }
+}
+
+function startSandTimer(){
+  clearInterval(sandTimerInterval);
+  sandTimerRemaining = 30;
+  sandTimerBtn.classList.remove('time-up');
+  sandTimerBtn.classList.add('running');
+  sandTimerBtn.textContent = sandTimerRemaining;
+
+  sandTimerInterval = setInterval(()=>{
+    sandTimerRemaining--;
+    if(sandTimerRemaining <= 0){
+      clearInterval(sandTimerInterval);
+      sandTimerBtn.classList.remove('running');
+      sandTimerBtn.classList.add('time-up');
+      sandTimerBtn.textContent = '⏰';
+      playBeep();
+      setTimeout(()=>{
+        sandTimerBtn.classList.remove('time-up');
+        sandTimerBtn.textContent = '⏳';
+      }, 2500);
+    } else {
+      sandTimerBtn.textContent = sandTimerRemaining;
+    }
+  }, 1000);
+}
+
+sandTimerBtn.addEventListener('click', ()=>{
+  startSandTimer();
+  if(currentRoom && !applyingRemote){
+    db.collection('rooms').doc(currentRoom).update({ timerStartedAt: Date.now() })
+      .catch(e=>console.error('timer sync error', e));
+  }
+});
+
+// ============================================================
+// SZOBA / FIREBASE SZINKRON
+// ============================================================
+
+function randRoomCode(){
+  return String(Math.floor(100000 + Math.random()*900000));
+}
+
+function getFieldContext(inputEl){
+  const card = inputEl.closest('.round-card');
+  const grid = inputEl.closest('.rounds-grid');
+  if(!card || !grid) return null;
+  const color = (grid.id === 'rounds-white') ? 'white' : 'black';
+  const roundNum = card.dataset.round;
+  const line = inputEl.closest('.clue-line');
+  const lineIdx = line ? line.dataset.line : null;
+  let fieldKey = null;
+  if(inputEl.classList.contains('clue-word')) fieldKey = 'clue'+lineIdx;
+  else if(inputEl.classList.contains('guess-white')) fieldKey = 'gw'+lineIdx;
+  else if(inputEl.classList.contains('guess-black')) fieldKey = 'gb'+lineIdx;
+  if(!fieldKey || lineIdx === null) return null;
+  return {color, roundNum, fieldKey};
+}
+
+function scheduleSync(inputEl){
+  if(!currentRoom || !db || applyingRemote) return;
+  const ctx = getFieldContext(inputEl);
+  if(!ctx) return;
+  const key = ctx.color+'-'+ctx.roundNum+'-'+ctx.fieldKey;
+  clearTimeout(syncTimers[key]);
+  syncTimers[key] = setTimeout(()=>{
+    const path = 'rounds.'+ctx.color+'.'+ctx.roundNum+'.'+ctx.fieldKey;
+    db.collection('rooms').doc(currentRoom).update({[path]: inputEl.value})
+      .catch(e=>console.error('mező szinkron hiba:', e));
+  }, 400);
+}
+
+function buildInitialRoundsData(whiteCodes, blackCodes){
+  const rounds = {white:{}, black:{}};
+  ['white','black'].forEach(color=>{
+    const codes = (color==='white') ? whiteCodes : blackCodes;
+    for(let r=1; r<=8; r++){
+      rounds[color][r] = {
+        clue0:'', clue1:'', clue2:'',
+        gw0:'', gw1:'', gw2:'',
+        gb0:'', gb1:'', gb2:'',
+        actual0:'', actual1:'', actual2:'',
+        secret0: codes[r-1][0], secret1: codes[r-1][1], secret2: codes[r-1][2],
+        finalized: false
+      };
+    }
+  });
+  return rounds;
+}
+
+function pushFullGameStart(wName, bName, whiteKeywords, blackKeywords, whiteCodes, blackCodes){
+  if(!db || !currentRoom) return;
+  const rounds = buildInitialRoundsData(whiteCodes, blackCodes);
+  db.collection('rooms').doc(currentRoom).set({
+    mode: 'full',
+    teamNames: {white: wName, black: bName},
+    keywords: {white: whiteKeywords, black: blackKeywords},
+    rounds: rounds,
+    timerStartedAt: null,
+    updatedAt: Date.now()
+  }, {merge:true}).catch(e=>console.error('pushFullGameStart hiba:', e));
+}
+
+function pushRoundReveal(color, roundNum, codeArr){
+  if(!db || !currentRoom) return;
+  const base = 'rounds.'+color+'.'+roundNum;
+  db.collection('rooms').doc(currentRoom).update({
+    [base+'.actual0']: String(codeArr[0]),
+    [base+'.actual1']: String(codeArr[1]),
+    [base+'.actual2']: String(codeArr[2]),
+    [base+'.finalized']: true
+  }).catch(e=>console.error('pushRoundReveal hiba:', e));
+}
+
+function setActiveEl(){
+  return document.activeElement;
+}
+
+function applyRemoteRoomData(data){
+  if(!data) return;
+  applyingRemote = true;
+  try{
+    // ha még nem választottunk csapatot ebben a szobában, mutassuk élőben, melyik van már lefoglalva
+    if(!roomTeamLocked && data.claimedTeams){
+      const whiteBtn = document.getElementById('btn-room-team-white');
+      const blackBtn = document.getElementById('btn-room-team-black');
+      if(whiteBtn){
+        whiteBtn.disabled = !!data.claimedTeams.white;
+        whiteBtn.style.opacity = data.claimedTeams.white ? '0.4' : '1';
+        whiteBtn.textContent = data.claimedTeams.white ? '⚪ Fehér csapat (foglalt)' : '⚪ Fehér csapat vagyunk';
+      }
+      if(blackBtn){
+        blackBtn.disabled = !!data.claimedTeams.black;
+        blackBtn.style.opacity = data.claimedTeams.black ? '0.4' : '1';
+        blackBtn.textContent = data.claimedTeams.black ? '⚫ Fekete csapat (foglalt)' : '⚫ Fekete csapat vagyunk';
+      }
+    }
+
+    // hidratáljuk a helyi UI-t, ha a szoba adatai szerint már fut a játék, de nálunk még nincs beállítva
+    // (vendégnél az első csatlakozáskor, hosztnál pedig újraindítás/háttérből visszatérés után)
+    if(data.mode === 'full' && !guestHydrated && !document.body.classList.contains('mode-full')){
+      guestHydrated = true;
+      const wName = (data.teamNames && data.teamNames.white) || 'Fehér csapat';
+      const bName = (data.teamNames && data.teamNames.black) || 'Fekete csapat';
+      currentGameTeams = { white:{id:null, name:wName}, black:{id:null, name:bName} };
+      gameConcluded = false;
+
+      const whiteKeywords = (data.keywords && data.keywords.white) || [];
+      const blackKeywords = (data.keywords && data.keywords.black) || [];
+      setupKeywordPanel('white', whiteKeywords, wName);
+      setupKeywordPanel('black', blackKeywords, bName);
+
+      ['white','black'].forEach(color=>{
+        for(let r=1;r<=8;r++){
+          const rd = data.rounds && data.rounds[color] && data.rounds[color][r];
+          if(!rd) continue;
+          const codeArr = [rd.secret0, rd.secret1, rd.secret2];
+          setupCodeBox(color, r, codeArr);
+        }
+      });
+      refreshRoundGating('white');
+      refreshRoundGating('black');
+
+      document.querySelectorAll('.digit-box.actual').forEach(inp=>{ inp.value=''; inp.readOnly=true; });
+      document.body.classList.add('mode-full');
+      applyTeamAccess();
+
+      // átlépünk a lap képernyőre a beállítás helyett
+      currentRound = {white:1, black:1};
+      overviewMode = {white:false, black:false};
+      showRound('white');
+      showRound('black');
+      showScreen('lap');
+    }
+
+    // folyamatos mezőszintű szinkron (kulcsszavak/tippek/kódok) mindkét oldalon
+    if(data.rounds){
+      ['white','black'].forEach(color=>{
+        for(let r=1;r<=8;r++){
+          const rd = data.rounds[color] && data.rounds[color][r];
+          if(!rd) continue;
+          const card = document.querySelector('#rounds-'+color+' .round-card[data-round="'+r+'"]');
+          if(!card) continue;
+
+          for(let li=0; li<3; li++){
+            const line = card.querySelector('.clue-line[data-line="'+li+'"]');
+            if(!line) continue;
+            const active = setActiveEl();
+
+            const wordInp = line.querySelector('.clue-word');
+            const remoteWord = rd['clue'+li] || '';
+            if(wordInp !== active && wordInp.value !== remoteWord) wordInp.value = remoteWord;
+
+            const gwInp = line.querySelector('.digit-box.guess-white');
+            const remoteGw = rd['gw'+li] || '';
+            if(gwInp !== active && gwInp.value !== remoteGw) gwInp.value = remoteGw;
+
+            const gbInp = line.querySelector('.digit-box.guess-black');
+            const remoteGb = rd['gb'+li] || '';
+            if(gbInp !== active && gbInp.value !== remoteGb) gbInp.value = remoteGb;
+          }
+
+          // felfedés szinkronizálása, ha ezen az eszközön még nem történt meg
+          const box = document.querySelector('#rounds-'+color+' .code-box[data-round="'+r+'"]');
+          if(box && rd.finalized && !box.classList.contains('finalized')){
+            const card2 = box.closest('.round-card');
+            const actualBoxes = card2.querySelectorAll('.digit-box.actual');
+            const codeArr = [rd.actual0, rd.actual1, rd.actual2];
+            actualBoxes.forEach((inp,i)=>{ inp.value = codeArr[i]; inp.readOnly = true; });
+            box.querySelector('.code-hidden').style.display = 'none';
+            const revealedEl = box.querySelector('.code-revealed');
+            revealedEl.style.display = 'block';
+            revealedEl.textContent = '✅ Végleges kód: ' + codeArr.join(' . ');
+            box.querySelector('.peek-btn').style.display = 'none';
+            box.querySelector('.hide-btn').style.display = 'none';
+            box.querySelector('.finalize-btn').style.display = 'none';
+            box.classList.add('finalized');
+            refreshRoundGating(color);
+          }
+        }
+      });
+      recomputeAll();
+    }
+
+    // homokóra szinkronizálása (mindig friss 30 mp-es visszaszámlálás, órakülönbségtől függetlenül)
+    if(data.timerStartedAt && data.timerStartedAt !== lastSeenTimerStart){
+      lastSeenTimerStart = data.timerStartedAt;
+      startSandTimer();
+    }
+  } finally {
+    applyingRemote = false;
+  }
+}
+
+function connectToRoom(code, hosting){
+  currentRoom = code;
+  isHost = hosting;
+  guestHydrated = false;
+  roomTeamLocked = false;
+  clearLocalGame();
+
+  if(roomUnsubscribe) roomUnsubscribe();
+  roomUnsubscribe = db.collection('rooms').doc(code).onSnapshot((snap)=>{
+    if(!snap.exists) return;
+    applyRemoteRoomData(snap.data());
+  }, (err)=>{
+    console.error('szoba szinkron hiba:', err);
+  });
+
+  document.getElementById('room-disconnected').style.display = 'none';
+  document.getElementById('room-connected').style.display = 'block';
+  document.getElementById('room-code-display').textContent = code;
+  document.getElementById('room-role-note').textContent = hosting
+    ? 'Te hoztad létre ezt a szobát – ti indítjátok a teljes játékot.'
+    : 'Csatlakoztál egy meglévő szobához.';
+
+  document.getElementById('room-team-picker').style.display = 'block';
+  document.getElementById('room-team-locked-badge').style.display = 'none';
+  document.getElementById('room-team-pick-status').textContent = '';
+  const wBtn = document.getElementById('btn-room-team-white');
+  const bBtn = document.getElementById('btn-room-team-black');
+  wBtn.disabled = false; wBtn.style.opacity = '1'; wBtn.textContent = '⚪ Fehér csapat vagyunk';
+  bBtn.disabled = false; bBtn.style.opacity = '1'; bBtn.textContent = '⚫ Fekete csapat vagyunk';
+  applyRoomTeamLockToLap();
+
+  const introEl = document.getElementById('setup-host-intro');
+  const hostFieldsEl = document.getElementById('setup-host-fields');
+  const guestWaitEl = document.getElementById('setup-guest-waiting');
+  if(!hosting){
+    introEl.style.display = 'none';
+    hostFieldsEl.style.display = 'none';
+    guestWaitEl.style.display = 'block';
+  } else {
+    introEl.style.display = 'block';
+    hostFieldsEl.style.display = 'block';
+    guestWaitEl.style.display = 'none';
+  }
+}
+
+function lockRoomTeam(team){
+  selectedTeam = team;
+  roomTeamLocked = true;
+  document.getElementById('btnTeamWhite').classList.toggle('active-white', team==='white');
+  document.getElementById('btnTeamBlack').classList.toggle('active-black', team==='black');
+  applyTeamAccess();
+  recomputeAll();
+
+  document.getElementById('room-team-picker').style.display = 'none';
+  const badge = document.getElementById('room-team-locked-badge');
+  badge.style.display = 'block';
+  badge.textContent = (team==='white' ? '⚪ Ti a Fehér csapat vagytok' : '⚫ Ti a Fekete csapat vagytok') + ' ezen az eszközön (rögzítve)';
+
+  applyRoomTeamLockToLap();
+
+  try{
+    localStorage.setItem(ROOM_SESSION_KEY, JSON.stringify({
+      roomCode: currentRoom, isHost: isHost, myTeam: team
+    }));
+  } catch(e){ console.error('szoba-munkamenet mentési hiba:', e); }
+}
+
+function applyRoomTeamLockToLap(){
+  const whiteBtn = document.getElementById('btnTeamWhite');
+  const blackBtn = document.getElementById('btnTeamBlack');
+  const lockNote = document.querySelector('.team-select span');
+  if(currentRoom && roomTeamLocked){
+    whiteBtn.disabled = true;
+    blackBtn.disabled = true;
+    whiteBtn.style.opacity = '0.6';
+    blackBtn.style.opacity = '0.6';
+    if(lockNote) lockNote.textContent = 'Csapatotok rögzítve (szoba-játék)';
+  } else {
+    whiteBtn.disabled = false;
+    blackBtn.disabled = false;
+    whiteBtn.style.opacity = '1';
+    blackBtn.style.opacity = '1';
+    if(lockNote) lockNote.textContent = 'Te melyik csapatban vagy? (a titkok elrejtéséhez)';
+  }
+}
+
+async function pickRoomTeam(team){
+  const pickStatus = document.getElementById('room-team-pick-status');
+  if(!db || !currentRoom) return;
+  const ref = db.collection('rooms').doc(currentRoom);
+  try{
+    await db.runTransaction(async (t)=>{
+      const doc = await t.get(ref);
+      const data = doc.data() || {};
+      const claimed = data.claimedTeams || {white:false, black:false};
+      if(claimed[team]){
+        throw new Error('already-claimed');
+      }
+      claimed[team] = true;
+      t.update(ref, {claimedTeams: claimed});
+    });
+    if(pickStatus) pickStatus.textContent = '';
+    lockRoomTeam(team);
+  } catch(e){
+    if(pickStatus){
+      pickStatus.style.color = '#b0453d';
+      pickStatus.textContent = (e.message === 'already-claimed')
+        ? '❌ Ezt a csapatot már kiválasztotta a másik eszköz.'
+        : '❌ Hiba: ' + e.message;
+    }
+  }
+}
+
+document.getElementById('btn-room-team-white').addEventListener('click', ()=> pickRoomTeam('white'));
+document.getElementById('btn-room-team-black').addEventListener('click', ()=> pickRoomTeam('black'));
+
+document.getElementById('btn-create-room').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('room-join-status');
+  if(!db){ statusEl.style.color='#b0453d'; statusEl.textContent='❌ Firebase nem elérhető.'; return; }
+  statusEl.style.color = '#222';
+  statusEl.textContent = '⏳ Szoba létrehozása...';
+  const code = randRoomCode();
+  try{
+    await db.collection('rooms').doc(code).set({
+      createdAt: Date.now(),
+      mode: null,
+      teamNames: null,
+      keywords: null,
+      rounds: null,
+      timerStartedAt: null,
+      claimedTeams: {white:false, black:false}
+    });
+    statusEl.style.color = '#2b7a2b';
+    statusEl.textContent = '✅ Szoba létrehozva!';
+    connectToRoom(code, true);
+  } catch(e){
+    statusEl.style.color = '#b0453d';
+    statusEl.textContent = '❌ Hiba: ' + e.message;
+  }
+});
+
+document.getElementById('btn-join-room').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('room-join-status');
+  const code = document.getElementById('join-room-code').value.trim();
+  if(code.length !== 6){
+    statusEl.style.color = '#b0453d';
+    statusEl.textContent = '❌ 6 jegyű kódot adj meg.';
+    return;
+  }
+  if(!db){ statusEl.style.color='#b0453d'; statusEl.textContent='❌ Firebase nem elérhető.'; return; }
+  statusEl.style.color = '#222';
+  statusEl.textContent = '⏳ Csatlakozás...';
+  try{
+    const snap = await db.collection('rooms').doc(code).get();
+    if(!snap.exists){
+      statusEl.style.color = '#b0453d';
+      statusEl.textContent = '❌ Nincs ilyen szoba.';
+      return;
+    }
+    statusEl.style.color = '#2b7a2b';
+    statusEl.textContent = '✅ Csatlakozva!';
+    connectToRoom(code, false);
+    const data = snap.data();
+    if(data && data.mode === 'full'){
+      applyRemoteRoomData(data);
+    }
+  } catch(e){
+    statusEl.style.color = '#b0453d';
+    statusEl.textContent = '❌ Hiba: ' + e.message;
+  }
+});
+
+document.getElementById('btn-leave-room').addEventListener('click', async ()=>{
+  if(db && currentRoom && roomTeamLocked){
+    const ref = db.collection('rooms').doc(currentRoom);
+    try{
+      await ref.update({['claimedTeams.'+selectedTeam]: false});
+    } catch(e){
+      console.error('csapat-felszabadítás hiba:', e);
+    }
+  }
+  if(roomUnsubscribe) roomUnsubscribe();
+  roomUnsubscribe = null;
+  currentRoom = null;
+  isHost = false;
+  guestHydrated = false;
+  roomTeamLocked = false;
+  applyRoomTeamLockToLap();
+  try{ localStorage.removeItem(ROOM_SESSION_KEY); } catch(e){}
+  document.getElementById('room-connected').style.display = 'none';
+  document.getElementById('room-disconnected').style.display = 'block';
+  document.getElementById('join-room-code').value = '';
+  document.getElementById('room-join-status').textContent = '';
+
+  document.getElementById('setup-host-intro').style.display = 'block';
+  document.getElementById('setup-host-fields').style.display = 'block';
+  document.getElementById('setup-guest-waiting').style.display = 'none';
+});
+
+// ---------- induláskor: szoba-munkamenet automatikus visszaállítása, vagy mentett helyi játék felajánlása ----------
+function tryAutoRejoinRoom(){
+  let session = null;
+  try{
+    const raw = localStorage.getItem(ROOM_SESSION_KEY);
+    session = raw ? JSON.parse(raw) : null;
+  } catch(e){ session = null; }
+
+  if(!session || !session.roomCode || !db) return false;
+
+  connectToRoom(session.roomCode, session.isHost);
+  // a csapatot már korábban lefoglaltuk - itt csak visszaállítjuk a helyi UI-t, nem foglalunk újra
+  selectedTeam = session.myTeam;
+  roomTeamLocked = true;
+  document.getElementById('btnTeamWhite').classList.toggle('active-white', session.myTeam==='white');
+  document.getElementById('btnTeamBlack').classList.toggle('active-black', session.myTeam==='black');
+  document.getElementById('room-team-picker').style.display = 'none';
+  const badge = document.getElementById('room-team-locked-badge');
+  badge.style.display = 'block';
+  badge.textContent = (session.myTeam==='white' ? '⚪ Ti a Fehér csapat vagytok' : '⚫ Ti a Fekete csapat vagytok') + ' ezen az eszközön (rögzítve)';
+  applyRoomTeamLockToLap();
+  applyTeamAccess();
+
+  return true;
+}
+
+function offerResumeIfAvailable(){
+  const saved = loadLocalGame();
+  if(!saved) return;
+  const section = document.getElementById('resume-game-section');
+  const label = document.getElementById('resume-game-label');
+  section.style.display = 'block';
+  label.textContent = saved.teamNames.white + ' vs ' + saved.teamNames.black;
+}
+
+document.getElementById('btn-resume-game').addEventListener('click', ()=>{
+  const saved = loadLocalGame();
+  if(saved) restoreLocalGame(saved);
+});
+
+document.getElementById('btn-discard-resume').addEventListener('click', ()=>{
+  clearLocalGame();
+  document.getElementById('resume-game-section').style.display = 'none';
+});
+
+(function initOnLoad(){
+  const rejoined = tryAutoRejoinRoom();
+  if(!rejoined){
+    offerResumeIfAvailable();
+  }
+})();
+</script>
+
+</body>
+</html>
