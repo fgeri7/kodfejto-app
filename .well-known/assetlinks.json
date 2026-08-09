@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.fgeri7.kodfejto",
+        "sha256_cert_fingerprints": ["1F:82:89:7D:92:03:CC:FB:2B:F7:6D:F0:A0:CB:06:D2:65:F6:E6:D3:32:20:A7:A8:CE:62:A5:74:48:3D:6B:EA"]
+      }
+    }]
